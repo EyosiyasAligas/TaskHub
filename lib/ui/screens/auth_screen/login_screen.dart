@@ -1,11 +1,21 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:lottie/lottie.dart';
+import 'package:task_hub/ui/screens/auth_screen/widgets/forget_password.dart';
 
 import '../../../app/app.dart';
+import '../../../app/routes.dart';
+import '../../../cubits/ForgotPasswordRequestCubit.dart';
+import '../../../cubits/auth_cubit.dart';
+import '../../../cubits/signin_cubit.dart';
+import '../../../cubits/signup_cubit.dart';
+import '../../../data/repository/auth_repository.dart';
+import '../../../utils/local_storage_keys.dart';
 import '../../../utils/ui_utils.dart';
+import '../../styles/colors.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,22 +23,42 @@ class LoginScreen extends StatefulWidget {
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
+
+  static Route route(RouteSettings routeSettings) {
+    return MaterialPageRoute(
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          BlocProvider<SignInCubit>(
+            create: (_) => SignInCubit(AuthRepository()),
+          ),
+          BlocProvider<SignUpCubit>(
+            create: (_) => SignUpCubit(AuthRepository()),
+          ),
+        ],
+        child: const LoginScreen(),
+      ),
+    );
+  }
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  TextEditingController nameController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
+  // TextEditingController nameController= = TextEditingController();
+  // TextEditingController emailController = TextEditingController();
+  // TextEditingController passwordController = TextEditingController();
 
-  bool isPasswordVisible = false;
+  String email = '';
+  String password = '';
+
+  bool isPasswordVisible = true;
+  bool isLoginScreen = true;
 
   final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
-    nameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
+    // nameController.dispose();
+    // emailController.dispose();
+    // passwordController.dispose();
     super.dispose();
   }
 
@@ -38,34 +68,36 @@ class _LoginScreenState extends State<LoginScreen> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            if (MyApp.themeNotifier.value == ThemeMode.dark) {
-              MyApp.themeNotifier.value = ThemeMode.light;
-              var box = Hive.box('settings');
-              box.put('darkMode', false);
-            } else {
-              MyApp.themeNotifier.value = ThemeMode.dark;
-              var box = Hive.box('settings');
-              box.put('darkMode', true);
-            }
-            setState(() {});
-          },
-          child: Icon(
-            MyApp.themeNotifier.value == ThemeMode.light
-                ? Icons.dark_mode
-                : Icons.light_mode,
+        // resizeToAvoidBottomInset: false,
+        // floatingActionButton: FloatingActionButton(
+        //   onPressed: () {
+        //     if (MyApp.themeNotifier.value == ThemeMode.dark) {
+        //       MyApp.themeNotifier.value = ThemeMode.light;
+        //       var box = Hive.box(settingsKey);
+        //       box.put(darkModeKey, false);
+        //     } else {
+        //       MyApp.themeNotifier.value = ThemeMode.dark;
+        //       var box = Hive.box(settingsKey);
+        //       box.put(darkModeKey, true);
+        //     }
+        //     setState(() {});
+        //   },
+        //   child: Icon(
+        //     MyApp.themeNotifier.value == ThemeMode.light
+        //         ? Icons.dark_mode
+        //         : Icons.light_mode,
+        //   ),
+        // ),
+        body: SingleChildScrollView(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth > 600) {
+                return _buildLargeScreen(size);
+              } else {
+                return _buildSmallScreen(size);
+              }
+            },
           ),
-        ),
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > 600) {
-              return _buildLargeScreen(size);
-            } else {
-              return _buildSmallScreen(size);
-            }
-          },
         ),
       ),
     );
@@ -78,14 +110,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return Row(
       children: [
         Expanded(
-          flex: 5,
+          flex: 3,
           child: RotatedBox(
-            quarterTurns: 3,
+            quarterTurns: 0,
             child: Lottie.asset(
-              'assets/coin.json',
-              height: size.height * 0.3,
-              width: double.infinity,
-              fit: BoxFit.fill,
+              'assets/task.json',
+              height: size.height,
+              width: size.width,
+              fit: BoxFit.cover,
             ),
           ),
         ),
@@ -96,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
             size,
           ),
         ),
-        SizedBox(width: size.width * 0.20),
+        SizedBox(width: size.width * 0.05),
       ],
     );
   }
@@ -136,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Padding(
             padding: const EdgeInsets.only(left: 20.0),
             child: Text(
-              'Login',
+              isLoginScreen ? 'Login' : 'Signup',
               style: Theme.of(context).textTheme.displayLarge,
             ),
           ),
@@ -145,9 +177,9 @@ class _LoginScreenState extends State<LoginScreen> {
           height: 8,
         ),
         Padding(
-          padding: EdgeInsets.only(left: 20.0),
+          padding: const EdgeInsets.only(left: 20.0),
           child: Text(
-            'Welcome Back!!!',
+            isLoginScreen ? 'Welcome Back!!!' : 'Create an Account',
             style: TextStyle(
               fontSize: UiUtils.screenTitleFontSize,
               // fontWeight: FontWeight.bold,
@@ -165,28 +197,23 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 /// username or Gmail
                 TextFormField(
+                  // controller: emailController,
                   style: TextStyle(
                     fontSize: UiUtils.screenSubTitleFontSize,
                   ),
+                  onChanged: (val) {
+                    email = val;
+                  },
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.person),
-                    hintText: 'Username or Gmail',
+                    prefixIcon: Icon(Icons.email_outlined),
+                    hintText: 'email',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(15)),
                     ),
                   ),
-                  controller: nameController,
                   // The validator receives the text that the user has entered.
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter username';
-                    } else if (value.length < 4) {
-                      return 'at least enter 4 characters';
-                    } else if (value.length > 13) {
-                      return 'maximum character is 13';
-                    }
-                    return null;
-                  },
+                  validator: (value) => UiUtils.validateEmail(value!),
                 ),
 
                 SizedBox(
@@ -195,10 +222,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 /// password
                 TextFormField(
-                  controller: passwordController,
+                  // controller: passwordController,
                   style: TextStyle(
                     fontSize: UiUtils.screenSubTitleFontSize,
                   ),
+                  onChanged: (val) {
+                    password = val;
+                  },
                   obscureText: isPasswordVisible,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.lock_open),
@@ -230,38 +260,70 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                SizedBox(
-                  height: size.height * 0.01,
-                ),
-                Text(
-                  'Creating an account means you\'re okay with our Terms of Services and our Privacy Policy',
-                  style: TextStyle(
-                    // color: Theme.of(context).colorScheme.onBackground,
-                    fontSize: UiUtils.screenSubTitleFontSize,
+                if (isLoginScreen)
+                  Container(
+                    alignment: Alignment.topRight,
+                    child: TextButton(
+                      onPressed: () {
+                        UiUtils.showBottomSheet(
+                          child: BlocProvider(
+                            create: (_) => ForgotPasswordRequestCubit(AuthRepository()),
+                            child: const ForgotPasswordRequestBottomSheet(),
+                          ),
+                          context: context,
+                        ).then((value) {
+                          if (value != null && !value['error']) {
+                            UiUtils.showSnackBar(
+                              context,
+                              "an email with password reset link has been sent to ${value['email']}",
+                              successColor,
+                            );
+                          }
+                        });
+                      },
+                      child: Text(
+                        'Forget Password?',
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.secondary),
+                      ),
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(
-                  height: size.height * 0.02,
-                ),
+                if (!isLoginScreen)
+                  SizedBox(
+                    height: size.height * 0.02,
+                  ),
+                if (!isLoginScreen)
+                  Text(
+                    'Creating an account means you\'re okay with our Terms of Services and our Privacy Policy',
+                    style: TextStyle(
+                      // color: Theme.of(context).colorScheme.onBackground,
+                      fontSize: UiUtils.screenSubTitleFontSize,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                if (!isLoginScreen)
+                  SizedBox(
+                    height: size.height * 0.02,
+                  ),
 
-                /// Login Button
-                loginButton(),
+                /// Login/signup Button
+                if (isLoginScreen) loginButton(),
+                if (!isLoginScreen) signupButton(),
                 SizedBox(
                   height: size.height * 0.03,
                 ),
 
-                /// Navigate To Login Screen
+                /// change between login and signup
                 GestureDetector(
                   onTap: () {
-                    nameController.clear();
-                    emailController.clear();
-                    passwordController.clear();
-                    _formKey.currentState?.reset();
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (ctx) => const SignUpScreen()));
+                    setState(() {
+                      _formKey.currentState?.reset();
+                      isLoginScreen = !isLoginScreen;
+                      print('emailController');
+                      print(email);
+                      print('passwordController');
+                      print(password);
+                    });
                   },
                   child: RichText(
                     text: TextSpan(
@@ -269,9 +331,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       // style: kHaveAnAccountStyle(size),
                       style: Theme.of(context).textTheme.bodyMedium,
 
-                    children: [
+                      children: [
                         TextSpan(
-                          text: " Sign up",
+                          text: isLoginScreen ? ' Sign up' : ' Login',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.primary,
                             fontSize: UiUtils.screenSubTitleFontSize,
@@ -291,30 +353,105 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Login Button
   Widget loginButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: ElevatedButton(
-        style: ButtonStyle(
-          backgroundColor:
-              MaterialStateProperty.all(Theme.of(context).colorScheme.primary),
-          shape: MaterialStateProperty.all(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
+    return BlocConsumer<SignInCubit, SignInState>(
+      listener: (context, state) {
+        if (state is SignInSuccess) {
+          context.read<AuthCubit>().authenticateUser(
+              jwtToken: state.jwtToken ?? '', user: state.user);
+          Navigator.of(context).pushReplacementNamed(Routes.home);
+        } else if (state is SignInFailure) {
+          UiUtils.showSnackBar(
+            context,
+            state.errorMessage,
+            Theme.of(context).colorScheme.error,
+          );
+        }
+      },
+      builder: (context, state) {
+        if (state is SignInInProgress) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.all(
+                  Theme.of(context).colorScheme.primary),
+              shape: MaterialStateProperty.all(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+            ),
+            onPressed: () {
+              // Validate returns true if the form is valid, or false otherwise.
+              if (_formKey.currentState!.validate()) {
+                context.read<SignInCubit>().signIn(
+                      email: email.trim(),
+                      password: password.trim(),
+                    );
+              }
+            },
+            child: Text(
+              'Login',
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
             ),
           ),
-        ),
-        onPressed: () {
-          // Validate returns true if the form is valid, or false otherwise.
-          if (_formKey.currentState!.validate()) {
-            // ... Navigate To your Home Page
-          }
-        },
-        child: Text(
-          'Login',
-          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-        ),
-      ),
+        );
+      },
+    );
+  }
+
+  Widget signupButton() {
+    return BlocConsumer<SignUpCubit, SignUpState>(
+      listener: (context, state) {
+        if (state is SignUpSuccess) {
+          context
+              .read<AuthCubit>()
+              .authenticateUser(jwtToken: state.jwtToken, user: state.user);
+          Navigator.of(context).pushReplacementNamed(Routes.home);
+        } else if (state is SignUpFailure) {
+          UiUtils.showSnackBar(
+            context,
+            state.errorMessage ?? 'fff',
+            Theme.of(context).colorScheme.error,
+          );
+        }
+      },
+      builder: (context, state) {
+        if (state is SignUpInProgress) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.all(
+                  Theme.of(context).colorScheme.primary),
+              shape: MaterialStateProperty.all(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+            ),
+            onPressed: () {
+              // Validate returns true if the form is valid, or false otherwise.
+              if (_formKey.currentState!.validate()) {
+                context.read<SignUpCubit>().signUp(
+                      email: email.trim(),
+                      password: password.trim(),
+                    );
+              }
+            },
+            child: Text(
+              'Signup',
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+            ),
+          ),
+        );
+      },
     );
   }
 }

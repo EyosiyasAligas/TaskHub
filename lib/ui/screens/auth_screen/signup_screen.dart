@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:lottie/lottie.dart';
+import 'package:task_hub/data/repository/auth_repository.dart';
 
+import '../../../app/routes.dart';
 import '../../../utils/ui_utils.dart';
 import '../auth_screen/login_screen.dart';
 import '../../../utils/constants.dart';
@@ -12,6 +14,12 @@ class SignUpScreen extends StatefulWidget {
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
+
+  static Route route(RouteSettings routeSettings) {
+    return MaterialPageRoute(
+      builder: (_) => const SignUpScreen(),
+    );
+  }
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
@@ -61,7 +69,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: RotatedBox(
             quarterTurns: 3,
             child: Lottie.asset(
-              'assets/coin.json',
+              'assets/task.json',
               height: size.height * 0.3,
               width: double.infinity,
               fit: BoxFit.fill,
@@ -250,10 +258,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     emailController.clear();
                     passwordController.clear();
                     _formKey.currentState?.reset();
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (ctx) => const LoginScreen()));
+                    Navigator.pushReplacementNamed(context, Routes.login);
                   },
                   child: RichText(
                     text: TextSpan(
@@ -294,10 +299,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ),
         ),
-        onPressed: () {
+        onPressed: () async {
           // Validate returns true if the form is valid, or false otherwise.
           if (_formKey.currentState!.validate()) {
-            // ... Navigate To your Home Page
+
           }
         },
         child: Text(

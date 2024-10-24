@@ -1,11 +1,16 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:task_hub/ui/styles/colors.dart';
 
+import '../cubits/auth_cubit.dart';
+import '../data/repository/auth_repository.dart';
 import '../ui/screens/splash_screen.dart';
+import '../ui/styles/colors.dart';
+import '../utils/local_storage_keys.dart';
 import '../utils/ui_utils.dart';
+import 'routes.dart';
 
 Future<void> initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,8 +37,9 @@ Future<void> initializeApp() async {
 
   // SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Hive.initFlutter();
-  await Hive.openBox('settings');
-  await Hive.openBox('darkMode');
+  await Hive.openBox(authBoxKey);
+  await Hive.openBox(settingsKey);
+  await Hive.openBox(darkModeKey);
   runApp(const MyApp());
 }
 
@@ -52,8 +58,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    var box = Hive.box('settings');
-    bool? darkMode = box.get('darkMode');
+    var box = Hive.box(settingsKey);
+    bool? darkMode = box.get(darkModeKey);
     if (darkMode == null) {
       themeNotifier.value = ThemeMode.system;
     } else if(darkMode) {
@@ -62,73 +68,81 @@ class MyApp extends StatelessWidget {
       themeNotifier.value = ThemeMode.light;
     }
 
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeNotifier,
-      builder: (context, currentTheme, child) {
-        return MaterialApp(
-          navigatorKey: UiUtils.rootNavigatorKey,
-          scaffoldMessengerKey: UiUtils.messengerKey,
-          debugShowCheckedModeBanner: false,
-          title: 'TaskHub',
-          builder: (context, widget) {
-            return ScrollConfiguration(
-              behavior: GlobalScrollBehavior(),
-              child: widget!,
-            );
-          },
-          theme: ThemeData(
-            brightness: Brightness.light,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: primaryColor,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthCubit>(
+          create: (_) => AuthCubit(AuthRepository()),
+        ),
+      ],
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: themeNotifier,
+        builder: (context, currentTheme, child) {
+          return MaterialApp(
+            navigatorKey: UiUtils.rootNavigatorKey,
+            scaffoldMessengerKey: UiUtils.messengerKey,
+            debugShowCheckedModeBanner: false,
+            title: 'TaskHub',
+            builder: (context, widget) {
+              return ScrollConfiguration(
+                behavior: GlobalScrollBehavior(),
+                child: widget!,
+              );
+            },
+            theme: ThemeData(
               brightness: Brightness.light,
-            ).copyWith(
-              primary: primaryColor,
-              onPrimary: onPrimaryColor,
-              secondary: secondaryColor,
-              onSecondary: onSecondaryColor,
-              // background: backgroundColor,
-              // error: errorColor,
-              // onBackground: onBackgroundColor,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: primaryColor,
+                brightness: Brightness.light,
+              ).copyWith(
+                primary: primaryColor,
+                onPrimary: onPrimaryColor,
+                secondary: secondaryColor,
+                onSecondary: onSecondaryColor,
+                // background: backgroundColor,
+                // error: errorColor,
+                // onBackground: onBackgroundColor,
+              ),
+              textTheme: TextTheme(
+                displayLarge: TextStyle(fontSize: UiUtils.largeFontSize, fontWeight: FontWeight.bold, color: Colors.black),
+                displayMedium: TextStyle(fontSize: UiUtils.mediumFontSize, fontWeight: FontWeight.bold, color: Colors.black),
+                displaySmall: TextStyle(fontSize: UiUtils.smallFontSize, color: Colors.black),
+                bodyLarge: TextStyle(fontSize: UiUtils.screenTitleFontSize, color: Colors.black),
+                bodyMedium: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.black),
+                bodySmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.black),
+              ),
+              useMaterial3: true,
             ),
-            textTheme: TextTheme(
-              displayLarge: TextStyle(fontSize: UiUtils.largeFontSize, fontWeight: FontWeight.bold, color: Colors.black),
-              displayMedium: TextStyle(fontSize: UiUtils.mediumFontSize, fontWeight: FontWeight.bold, color: Colors.black),
-              displaySmall: TextStyle(fontSize: UiUtils.smallFontSize, color: Colors.black),
-              bodyLarge: TextStyle(fontSize: UiUtils.screenTitleFontSize, color: Colors.black),
-              bodyMedium: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.black),
-              bodySmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.black),
-            ),
-            useMaterial3: true,
-          ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: primaryColor,
+            darkTheme: ThemeData(
               brightness: Brightness.dark,
-            ).copyWith(
-              primary: primaryColor,
-              onPrimary: onPrimaryColor,
-              secondary: secondaryColor,
-              onSecondary: onSecondaryColor,
-              // background: backgroundColor,
-              // error: errorColor,
-              // onBackground: onBackgroundColor,
-            ),
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: primaryColor,
+                brightness: Brightness.dark,
+              ).copyWith(
+                primary: primaryColor,
+                onPrimary: onPrimaryColor,
+                secondary: secondaryColor,
+                onSecondary: onSecondaryColor,
+                // background: backgroundColor,
+                // error: errorColor,
+                // onBackground: onBackgroundColor,
+              ),
 
-            textTheme: TextTheme(
-              displayLarge: TextStyle(fontSize: UiUtils.largeFontSize, fontWeight: FontWeight.bold, color: Colors.white),
-              displayMedium: TextStyle(fontSize: UiUtils.mediumFontSize, fontWeight: FontWeight.bold, color: Colors.white),
-              displaySmall: TextStyle(fontSize: UiUtils.smallFontSize, color: Colors.white),
-              bodyLarge: TextStyle(fontSize: UiUtils.screenTitleFontSize, color: Colors.white),
-              bodyMedium: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.white),
-              bodySmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.white),
+              textTheme: TextTheme(
+                displayLarge: TextStyle(fontSize: UiUtils.largeFontSize, fontWeight: FontWeight.bold, color: Colors.white),
+                displayMedium: TextStyle(fontSize: UiUtils.mediumFontSize, fontWeight: FontWeight.bold, color: Colors.white),
+                displaySmall: TextStyle(fontSize: UiUtils.smallFontSize, color: Colors.white),
+                bodyLarge: TextStyle(fontSize: UiUtils.screenTitleFontSize, color: Colors.white),
+                bodyMedium: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.white),
+                bodySmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.white),
+              ),
+              useMaterial3: true,
             ),
-            useMaterial3: true,
-          ),
-          themeMode: currentTheme,
-          home: const SplashScreen(),
-        );
-      },
+            themeMode: currentTheme,
+            initialRoute: Routes.splash,
+            onGenerateRoute: Routes.onGenerateRouted,
+          );
+        },
+      ),
     );
   }
 }
