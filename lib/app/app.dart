@@ -89,17 +89,37 @@ class MyApp extends StatelessWidget {
               );
             },
             theme: ThemeData(
+              primaryColor: primaryColor,
+              primaryColorLight: Colors.blueAccent.shade700,
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.blueGrey.shade100.withOpacity(0.5),
+                titleTextStyle: TextStyle(
+                  fontSize: UiUtils.screenTitleFontSize,
+                  color: Colors.grey.shade800
+                ),
+                iconTheme: IconThemeData(
+                  color: Colors.grey.shade800
+                ),
+              ),
+              bottomNavigationBarTheme: BottomNavigationBarThemeData(
+                backgroundColor: Colors.grey.shade200,
+                elevation: 0,
+                selectedItemColor: primaryColor,
+                // unselectedItemColor: Colors.grey,
+              ),
               brightness: Brightness.light,
+              scaffoldBackgroundColor: lightModeScaffoldBackgroundColor,
               colorScheme: ColorScheme.fromSeed(
                 seedColor: primaryColor,
+                primary: primaryColor,
                 brightness: Brightness.light,
               ).copyWith(
                 primary: primaryColor,
                 onPrimary: onPrimaryColor,
                 secondary: secondaryColor,
                 onSecondary: onSecondaryColor,
+                error: lightModeErrorColor,
                 // background: backgroundColor,
-                // error: errorColor,
                 // onBackground: onBackgroundColor,
               ),
               textTheme: TextTheme(
@@ -109,12 +129,31 @@ class MyApp extends StatelessWidget {
                 bodyLarge: TextStyle(fontSize: UiUtils.screenTitleFontSize, color: Colors.black),
                 bodyMedium: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.black),
                 bodySmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.black),
+                titleSmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.grey.shade800),
               ),
               useMaterial3: true,
             ),
             darkTheme: ThemeData(
+              primaryColor: primaryColor,
+              primaryColorLight: Colors.blueAccent.shade100,
               brightness: Brightness.dark,
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.blueGrey.shade900.withOpacity(0.2),
+                titleTextStyle: TextStyle(
+                    fontSize: UiUtils.screenTitleFontSize,
+                    color: Colors.grey.shade300
+                ),
+                iconTheme: IconThemeData(
+                    color: Colors.grey.shade300
+                ),
+              ),
+              bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                elevation: 0,
+                selectedItemColor: secondaryColor,
+                unselectedItemColor: Colors.grey,
+              ),
               colorScheme: ColorScheme.fromSeed(
+                primary: primaryColor,
                 seedColor: primaryColor,
                 brightness: Brightness.dark,
               ).copyWith(
@@ -122,8 +161,8 @@ class MyApp extends StatelessWidget {
                 onPrimary: onPrimaryColor,
                 secondary: secondaryColor,
                 onSecondary: onSecondaryColor,
+                error: darkModeErrorColor,
                 // background: backgroundColor,
-                // error: errorColor,
                 // onBackground: onBackgroundColor,
               ),
 
@@ -134,6 +173,7 @@ class MyApp extends StatelessWidget {
                 bodyLarge: TextStyle(fontSize: UiUtils.screenTitleFontSize, color: Colors.white),
                 bodyMedium: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.white),
                 bodySmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.white),
+                titleSmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.grey.shade200),
               ),
               useMaterial3: true,
             ),

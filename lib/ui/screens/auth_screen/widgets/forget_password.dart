@@ -126,10 +126,9 @@ class _ForgotPasswordRequestBottomSheetState
                           ),
                         ),
                       ),
-                      onPressed: () {
-                        if (state is ForgotPasswordRequestInProgress) {
-                          return;
-                        }
+                      onPressed: state is ForgotPasswordRequestInProgress
+                          ? null
+                          : () {
                         FocusScope.of(context).unfocus();
                         if (UiUtils.validateEmail(_emailTextEditingController.text.trim()) != null) {
                           UiUtils.showOverlay(
@@ -146,12 +145,31 @@ class _ForgotPasswordRequestBottomSheetState
                               email: _emailTextEditingController.text.trim(),
                             );
                       },
-                      child: Text(
-                        state is ForgotPasswordRequestInProgress
-                            ? 'Submitting...'
-                            : 'Submit',
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimary),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (state is ForgotPasswordRequestInProgress)
+                          SizedBox(
+                            height: 15,
+                            width: 15,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.onPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          Text(
+                            state is ForgotPasswordRequestInProgress
+                                ? 'Submitting...'
+                                : 'Submit',
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary),
+                          ),
+                        ],
                       ),
                     ),
                   );

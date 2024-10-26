@@ -52,7 +52,7 @@ class AuthCubit extends Cubit<AuthState> {
   UserModel getUserDetails() {
     if (state is Authenticated) {
       print('user from auth');
-      // print((state as Authenticated).user.userName);
+      return (state as Authenticated).user;
     }
     return UserModel.fromJson({});
   }
