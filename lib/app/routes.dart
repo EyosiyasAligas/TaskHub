@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../ui/screens/add_or_edit_note_screen.dart';
 import '../ui/screens/auth_screen/login_screen.dart';
 import '../ui/screens/auth_screen/signup_screen.dart';
 import '../ui/screens/home_screen/home_screen.dart';
@@ -11,6 +12,8 @@ class Routes {
   static const String home = "/";
   static const String login = "login";
   static const String signup = "signup";
+
+  static const String addOrEditNote = "/addOrEditNote";
 
   static String currentRoute = splash;
 
@@ -35,6 +38,10 @@ class Routes {
       case home:
         {
           return HomeScreen.route(routeSettings);
+        }
+      case addOrEditNote:
+        {
+          return AddOrEditNotesScreen.route(routeSettings);
         }
       default:
         {

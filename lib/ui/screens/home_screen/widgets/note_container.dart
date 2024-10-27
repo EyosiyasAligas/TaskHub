@@ -1,13 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:task_hub/data/repository/note_repository.dart';
 
-import '../../../../app/app.dart';
 import '../../../../app/routes.dart';
 import '../../../../cubits/auth_cubit.dart';
 import '../../../../cubits/fetch_note_cubit.dart';
@@ -16,7 +13,6 @@ import '../../../../utils/ui_utils.dart';
 import '../../../styles/colors.dart';
 import '../../../widgets/custom_shimmer_container.dart';
 import '../../../widgets/custom_sliver_app_bar.dart';
-import '../../../widgets/drawer_container.dart';
 import '../../../widgets/error_container.dart';
 import '../../../widgets/shimmer_loading_container.dart';
 
@@ -47,47 +43,46 @@ class _NoteContainerState extends State<NoteContainer> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    print('initState from NoteContainer');
     Future.delayed(Duration.zero, () {
-      context.read<FetchNoteCubit>().fetchNotes();
+      context
+          .read<FetchNoteCubit>()
+          .fetchNotes(userId: context.read<AuthCubit>().getUserDetails().id);
     });
   }
 
   Widget buildBody(ThemeData themeData, Size size, List<Note> notes) {
     List<Note> pinnedNotes = notes.where((note) => note.isPinned).toList();
     List<Note> unPinnedNotes = notes.where((note) => !note.isPinned).toList();
-    return Container(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (pinnedNotes.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 10, bottom: 5, left: 20),
-              child: Text(
-                'Pinned Notes',
-                style: TextStyle(
-                  fontSize: UiUtils.screenSubTitleFontSize - 1,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (pinnedNotes.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 5, left: 20),
+            child: Text(
+              'Pinned Notes',
+              style: TextStyle(
+                fontSize: UiUtils.screenSubTitleFontSize - 1,
               ),
             ),
-          if (pinnedNotes.isNotEmpty) buildNotes(themeData, size, pinnedNotes),
-          if (pinnedNotes.isNotEmpty)
-            const SizedBox(
-              height: 10,
-            ),
-          if (pinnedNotes.isNotEmpty && unPinnedNotes.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 10, bottom: 5, left: 20),
-              child: Text(
-                'Others',
-                style: TextStyle(
-                  fontSize: UiUtils.screenSubTitleFontSize - 1,
-                ),
+          ),
+        if (pinnedNotes.isNotEmpty) buildNotes(themeData, size, pinnedNotes),
+        if (pinnedNotes.isNotEmpty)
+          const SizedBox(
+            height: 10,
+          ),
+        if (pinnedNotes.isNotEmpty && unPinnedNotes.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 5, left: 20),
+            child: Text(
+              'Others',
+              style: TextStyle(
+                fontSize: UiUtils.screenSubTitleFontSize - 1,
               ),
             ),
-          buildNotes(themeData, size, unPinnedNotes),
-        ],
-      ),
+          ),
+        buildNotes(themeData, size, unPinnedNotes),
+      ],
     );
   }
 
@@ -158,6 +153,8 @@ class _NoteContainerState extends State<NoteContainer> {
                 selectedNotes.remove(note);
               });
             }
+          } else {
+            Navigator.pushNamed(context, Routes.addOrEditNote, arguments: note);
           }
           if (selectedNotes.isEmpty) {
             isLongPressed = false;
@@ -170,7 +167,7 @@ class _NoteContainerState extends State<NoteContainer> {
             maxHeight: size.height * 0.8,
           ),
           decoration: BoxDecoration(
-            color: note.color!.isEmpty
+            color: note.color == null || note.color!.isEmpty
                 ? Colors.transparent
                 : Color(note.color!.hashCode),
             border: Border.all(
@@ -289,7 +286,6 @@ class _NoteContainerState extends State<NoteContainer> {
                             labelPadding:
                                 const EdgeInsets.symmetric(horizontal: 5),
                             elevation: 0,
-                            backgroundColor: Colors.red,
                             color: MaterialStateColor.resolveWith(
                               (states) =>
                                   note.color != null && note.color!.isNotEmpty
@@ -479,7 +475,7 @@ class _NoteContainerState extends State<NoteContainer> {
         child: FloatingActionButton(
           isExtended: true,
           onPressed: () {
-            // Navigator.pushNamed(context, Routes.addOrEditNote);
+            Navigator.pushNamed(context, Routes.addOrEditNote);
           },
           child: const Icon(Icons.add),
         ),
@@ -501,9 +497,10 @@ class _NoteContainerState extends State<NoteContainer> {
               actions: [
                 IconButton(
                   onPressed: () {
-                    selectedNotes.forEach((note) {
+                    for (var note in selectedNotes) {
                       note.isPinned = !note.isPinned;
-                    });
+                    }
+                    selectedNotes.clear();
                     setState(() {});
                   },
                   icon: const Icon(Icons.push_pin),
@@ -548,7 +545,10 @@ class _NoteContainerState extends State<NoteContainer> {
           : null,
       body: RefreshIndicator(
         onRefresh: () {
-          return context.read<FetchNoteCubit>().fetchNotes();
+          return Future.delayed(Duration.zero, () {
+            context.read<FetchNoteCubit>().fetchNotes(
+                userId: context.read<AuthCubit>().getUserDetails().id);
+          });
         },
         displacement: MediaQuery.of(context).padding.top,
         child: Container(
@@ -578,15 +578,23 @@ class _NoteContainerState extends State<NoteContainer> {
                               return ErrorContainer(
                                 errorMessageText: state.errorMessage,
                                 onTapRetry: () {
-                                  context.read<FetchNoteCubit>().fetchNotes();
+                                  context.read<FetchNoteCubit>().fetchNotes(
+                                      userId: context
+                                          .read<AuthCubit>()
+                                          .getUserDetails()
+                                          .id);
                                 },
                               );
                             }
                             if (state is FetchNoteSuccess) {
-                              fetchedNotes = state.notes
-                                  .where((note) => !note.isArchived)
-                                  .toList();
-                              return buildBody(themeData, size, fetchedNotes);
+                              // fetchedNotes = state.notes
+                              //     .where((note) => !note.isArchived)
+                              //     .toList();
+                              return StreamBuilder(
+                                builder: (context, snapshot) {
+                                  return buildBody(themeData, size, snapshot.data ?? []);
+                                }, stream: state.notes,
+                              );
                             }
                             return const SizedBox.shrink();
                           },

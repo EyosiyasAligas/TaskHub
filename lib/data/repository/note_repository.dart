@@ -1,3 +1,9 @@
+import 'dart:convert';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+
+import '../../utils/api.dart';
 import '../models/note.dart';
 
 class NoteRepository {
@@ -32,7 +38,7 @@ class NoteRepository {
       id: '2',
       title: 'Project Ideas',
       content:
-          'Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas... 🤔',
+      'Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas Brainstorming for new app ideas... 🤔',
       todoItems: null,
       createdBy: 'user123',
       isPinned: false,
@@ -84,7 +90,7 @@ class NoteRepository {
     // more notes...
     Note(
       id: '5',
-      title: 'Grocery List',
+      title: 'Grocery List 2',
       content: null,
       todoItems: [
         TodoItem(task: 'Buy milk', isCompleted: false),
@@ -100,7 +106,7 @@ class NoteRepository {
       updatedAt: DateTime.now().subtract(const Duration(days: 1)),
       collaborators: ['user124', 'user125'],
       reminder: DateTime.now().add(const Duration(days: 1)),
-      tags: ['shopping', 'personal', 'groceries', 'food'],
+      tags: ['shopping', 'personal', 'groceries', 'food', 'urgent'],
       isArchived: false,
       imageUrls: [
         'https://example.com/image1.jpg',
@@ -111,8 +117,7 @@ class NoteRepository {
     Note(
       id: '6',
       title: 'Project Ideas',
-      content:
-          'Mobile App Development',
+      content: 'Mobile App Development',
       todoItems: null,
       createdBy: 'user123',
       isPinned: false,
@@ -145,9 +150,92 @@ class NoteRepository {
     ),
   ];
 
-  Future<List<Note>> fetchNotes() async {
-    // Simulate network delay
+  Future<List<Note>> fetchDummyNotes() async {
     await Future.delayed(const Duration(milliseconds: 500));
     return dummyNotes;
+  }
+
+  final _database = FirebaseDatabase.instance.ref('notes');
+  // final fetchNoteReference = FirebaseDatabase.instance.ref().child('notes');
+
+  Future<List<Note>> fetchNotes({required String userId}) async {
+    try {
+      List<Note> notes = [];
+      await _database.get().then((value) {
+        Map<String, dynamic> fetchedData = jsonDecode(
+            jsonEncode(value.value, toEncodable: (e) => e.toString()));
+
+        print('fetchNoteReference: ${fetchedData}');
+        notes = fetchedData.entries.map((entry) {
+          return Note.fromMap(Map<String, dynamic>.from(entry.value));
+        }).toList();
+      });
+
+      print('Fetched notes: $notes');
+      return notes;
+    } on FirebaseException catch (e) {
+      print('Error message: ${e.toString()}');
+      throw Exception('Failed to fetch notes: ${e.message}');
+    }
+  }
+
+  Stream<List<Note>> fetchNotesStream({required String userId})  {
+    try {
+      List<Note> notes = [];
+      var fetch = _database.onValue.listen((event) {
+        Map<String, dynamic> fetchedData = jsonDecode(
+            jsonEncode(event.snapshot.value, toEncodable: (e) => e.toString()));
+
+        notes = fetchedData.entries.map((entry) {
+          return Note.fromMap(Map<String, dynamic>.from(entry.value));
+        }).toList();
+
+        print('Fetched notes: ${notes[0].content}');
+
+        // return notes;
+      });
+      return Stream.value(notes);
+    } on FirebaseException catch (e) {
+      print('Error message: ${e.toString()}');
+      throw Exception('Failed to fetch notes: ${e.message}');
+    }
+  }
+
+  void createNote({
+    required Note note,
+    required String userId,
+  }) async {
+    try {
+      print('start create note');
+      // data is not sent to firebase
+      var id = _database.push();
+      note.id = id.key.toString();
+      //
+      // note.createdBy = userId;
+      await _database.child(note.id).update(note.toMap());
+      print('end create note');
+    } on FirebaseException catch (e) {
+      throw Exception('Failed to create note: ${e.message}');
+    }
+  }
+
+  Future<void> updateNote({
+    required Note note,
+  }) async {
+    try {
+      await _database.child(note.id).update(note.toMap());
+    } on FirebaseException catch (e) {
+      throw Exception('Failed to update note: ${e.message}');
+    }
+  }
+
+  Future<void> deleteNote({
+    required String noteId,
+  }) async {
+    try {
+      await _database.child('/$noteId').remove();
+    } on FirebaseException catch (e) {
+      throw Exception('Failed to delete note: ${e.message}');
+    }
   }
 }

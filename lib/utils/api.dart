@@ -20,14 +20,16 @@ class ApiException implements Exception {
   }
 }
 
-// ignore: avoid_classes_with_only_static_members
 class Api {
   static Map<String, String> headers() {
     final String jwtToken = Hive.box(authBoxKey).get(jwtTokenKey) ?? "";
     if (kDebugMode) {
       print("token is: $jwtToken");
     }
-    return {"Authorization": "Bearer $jwtToken"};
+    return {
+      "Content-Type": "application/json",
+      // "Authorization": "Bearer $jwtToken",
+    };
   }
 
   // app APIs
@@ -36,8 +38,15 @@ class Api {
   static String logOut = "${authBaseUrl}signOut?key=$apiKey";
   static String forgotPassword = "${authBaseUrl}sendOobCode?key=$apiKey";
 
-  // Api methods
+  // static String note = "${realTimeDatabaseBaseUrl}notes.json";
 
+  static String note(String userId) =>
+      "${realTimeDatabaseBaseUrl}notes/$userId.json";
+
+  static String updateNote({required String userId, required String id}) =>
+      "${realTimeDatabaseBaseUrl}notes//$id.json";
+
+  // Api methods
   static Future<Map<String, dynamic>> post({
     required Map<String, dynamic> body,
     required String url,
@@ -53,6 +62,7 @@ class Api {
       if (kDebugMode) {
         print("API Called POST: $url");
         print("Body Params: $body");
+        print("Header: ${useAuthToken ? headers() : {}}");
         print("Response: ${response.body}");
       }
 
@@ -65,12 +75,12 @@ class Api {
         throw ApiException(responseData['error']['message'].toString());
       }
 
-
       return responseData;
     } on SocketException {
       throw ApiException('No Internet Connection, Please try again later');
     } on FirebaseAuthException catch (e) {
-      throw ApiException(e.message ?? 'Something went wrong, Please try again later');
+      throw ApiException(
+          e.message ?? 'Something went wrong, Please try again later');
     }
   }
 
@@ -101,7 +111,8 @@ class Api {
     } on SocketException {
       throw ApiException('No Internet Connection, Please try again later');
     } on FirebaseAuthException catch (e) {
-      throw ApiException(e.message ?? 'Something went wrong, Please try again later');
+      throw ApiException(
+          e.message ?? 'Something went wrong, Please try again later');
     }
   }
 
@@ -129,7 +140,8 @@ class Api {
     } on SocketException {
       throw ApiException('No Internet Connection, Please try again later');
     } on FirebaseAuthException catch (e) {
-      throw ApiException(e.message ?? 'Something went wrong, Please try again later');
+      throw ApiException(
+          e.message ?? 'Something went wrong, Please try again later');
     } catch (e) {
       throw ApiException('Something went wrong, Please try again later');
     }

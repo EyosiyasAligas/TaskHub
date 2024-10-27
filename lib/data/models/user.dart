@@ -14,7 +14,7 @@ class UserModel {
   });
 
   UserModel.fromJson(Map<String, dynamic> json) {
-    id = json['id'] ?? '';
+    id = json['localId'] ?? '';
     userName = json['displayName'] ?? "";
     email = json['email'] ?? '';
     fcmId = json['fcm_id'] ?? "";

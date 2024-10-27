@@ -93,12 +93,15 @@ class MyApp extends StatelessWidget {
               primaryColorLight: Colors.blueAccent.shade700,
               appBarTheme: AppBarTheme(
                 backgroundColor: Colors.blueGrey.shade100.withOpacity(0.5),
+                actionsIconTheme: const IconThemeData(
+                  size: 22
+                ),
                 titleTextStyle: TextStyle(
                   fontSize: UiUtils.screenTitleFontSize,
                   color: Colors.grey.shade800
                 ),
                 iconTheme: IconThemeData(
-                  color: Colors.grey.shade800
+                  color: Colors.grey.shade800,
                 ),
               ),
               bottomNavigationBarTheme: BottomNavigationBarThemeData(
@@ -142,6 +145,9 @@ class MyApp extends StatelessWidget {
                 titleTextStyle: TextStyle(
                     fontSize: UiUtils.screenTitleFontSize,
                     color: Colors.grey.shade300
+                ),
+                actionsIconTheme: const IconThemeData(
+                    size: 22
                 ),
                 iconTheme: IconThemeData(
                     color: Colors.grey.shade300

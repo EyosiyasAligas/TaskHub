@@ -4,7 +4,7 @@ class Note {
   String? content;
   List<TodoItem>? todoItems;
   bool isPinned;
-  String? createdBy;
+  String createdBy;
   String? color;
   DateTime createdAt;
   DateTime updatedAt;
@@ -20,7 +20,7 @@ class Note {
     required this.title,
     this.content,
     this.todoItems,
-    this.createdBy,
+    required this.createdBy,
     this.isPinned = false,
     this.color,
     DateTime? createdAt,
@@ -31,7 +31,8 @@ class Note {
     this.isArchived = false,
     this.imageUrls,
     this.isTodo = false,
-  })  : createdAt = createdAt ?? DateTime.now(),
+  })
+      : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
 
@@ -74,25 +75,29 @@ class Note {
     collaborators.remove(userId);
   }
 
-  factory Note.fromMap(Map<String, dynamic> map) {
+  factory Note.fromMap(Map<String, dynamic> data) {
+
+    //if any data item is null then it will be replaced by default value
     return Note(
-      id: map['id'] ?? '',
-      title: map['title'] ?? '',
-      content: map['content'],
-      todoItems: map['todoItems'] != null
-          ? (map['todoItems'] as List).map((item) => TodoItem.fromMap(item)).toList()
+      id: data['id'] as String,
+      title: data['title'] as String,
+      content: data['content'] as String?,
+      todoItems: data['todoItems'] != null
+          ? (data['todoItems'] as List<dynamic>)
+          .map((item) => TodoItem.fromMap(Map<String, dynamic>.from(item)))
+          .toList()
           : null,
-      createdBy: map['createdBy'] ?? '',
-      isPinned: map['isPinned'] ?? false,
-      color: map['color'] ?? '',
-      createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
-      collaborators: List<String>.from(map['collaborators'] ?? []),
-      reminder: map['reminder'] != null ? DateTime.parse(map['reminder']) : null,
-      tags: List<String>.from(map['tags'] ?? []),
-      isArchived: map['isArchived'] ?? false,
-      imageUrls: List<String>.from(map['imageUrls'] ?? []),
-      isTodo: map['isTodo'] ?? false,
+      createdBy: data['createdBy'] as String,
+      isPinned: data['isPinned'] as bool? ?? false,
+      color: data['color'] as String? ?? '',
+      createdAt: DateTime.parse(data['createdAt'] as String),
+      updatedAt: DateTime.parse(data['updatedAt'] as String),
+      collaborators: data['collaborators'] != null ? List<String>.from(data['collaborators']) : [],
+      reminder: data['reminder'] != null ? DateTime.parse(data['reminder']) : null,
+      tags: data['tags'] != null ? List<String>.from(data['tags']) : [],
+      isArchived: data['isArchived'] as bool? ?? false,
+      imageUrls: data['imageUrls'] != null ? List<String>.from(data['imageUrls']) : null,
+      isTodo: data['isTodo'] as bool? ?? false,
     );
   }
 
@@ -101,22 +106,22 @@ class Note {
       'id': id,
       'title': title,
       'content': content,
-      'todoItems': todoItems?.map((item) => item.toMap()).toList(),
-      'createdBy': createdBy, // Store who created the note
+      'todoItems': todoItems != null ? todoItems?.map((item) => item.toMap()).toList() : null,
+      'createdBy': createdBy,
       'isPinned': isPinned,
       'color': color,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'collaborators': collaborators,
-      'reminder': reminder?.toIso8601String(),
+      'reminder': reminder,
       'tags': tags,
       'isArchived': isArchived,
       'imageUrls': imageUrls,
       'isTodo': isTodo,
     };
   }
-}
 
+}
 class TodoItem {
   String task;
   bool isCompleted;
