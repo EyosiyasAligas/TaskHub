@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../ui/screens/add_or_edit_note_screen.dart';
 import '../ui/screens/auth_screen/login_screen.dart';
 import '../ui/screens/auth_screen/signup_screen.dart';
+import '../ui/screens/chat_message_screen.dart';
 import '../ui/screens/home_screen/home_screen.dart';
 import '../ui/screens/splash_screen.dart';
 
@@ -14,6 +15,7 @@ class Routes {
   static const String signup = "signup";
 
   static const String addOrEditNote = "/addOrEditNote";
+  static const String chatScreen = "/chatScreen";
 
   static String currentRoute = splash;
 
@@ -42,6 +44,10 @@ class Routes {
       case addOrEditNote:
         {
           return AddOrEditNotesScreen.route(routeSettings);
+        }
+      case chatScreen:
+        {
+          return ChatScreen.route(routeSettings);
         }
       default:
         {

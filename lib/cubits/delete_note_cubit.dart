@@ -26,7 +26,7 @@ class DeleteNoteCubit extends Cubit<DeleteNoteState> {
   }) async {
     emit(DeleteNoteInProgress());
     try {
-      await _noteRepository.deleteNote(
+      _noteRepository.deleteNote(
         noteId: noteId,
       );
       emit(DeleteNoteSuccess());

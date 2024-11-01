@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -37,6 +40,8 @@ class AuthRepository {
     return Hive.box(authBoxKey).put(jwtTokenKey, value);
   }
 
+  final _database = FirebaseDatabase.instance.ref('users');
+
   Future<Map<String, dynamic>> signIn(
       {required String email, required String password}) async {
     final url = Api.login;
@@ -47,12 +52,18 @@ class AuthRepository {
     };
 
     try {
-      final response =
-          await Api.post(body: body, url: url, useAuthToken: false);
-      return {
-        "jwtToken": response['idToken'],
-        "user": UserModel.fromJson(Map.from(response))
+      final response = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+      var userMap = {
+        'email': email,
+        // 'fcm_id': await FirebaseMessaging.instance.getToken(),
+        'localId': response.user!.uid,
+        'displayName': '',
+        'fcm_id': '',
       };
+      String? token = await response.user!.getIdToken();
+      print('userMap: $userMap');
+      return {"jwtToken": token, "user": UserModel.fromJson(Map.from(userMap))};
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -68,19 +79,29 @@ class AuthRepository {
     };
 
     try {
-      final response =
-          await Api.post(body: body, url: url, useAuthToken: false);
-      return {
-        "jwtToken": response['idToken'],
-        "user": UserModel.fromJson(Map.from(response))
+      //signUp using firebase sdk
+      final response = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+      await _database.child(response.user!.uid).set({
+        'id': response.user!.uid,
+        'email': email,
+      });
+      var userMap = {
+        'email': email,
+        // 'fcm_id': await FirebaseMessaging.instance.getToken(),
+        'localId': response.user!.uid,
+        'displayName': '',
+        'fcm_id': '',
       };
+      String? token = await response.user!.getIdToken();
+      print('userMap: $userMap');
+      return {"jwtToken": token, "user": UserModel.fromJson(Map.from(userMap))};
     } catch (e) {
       throw ApiException('Failed to sign up: $e');
     }
   }
 
   Future<void> signOut(String token) async {
-    final url = Api.logOut;
     final body = {
       'idToken': token,
     };
@@ -89,7 +110,7 @@ class AuthRepository {
       setIsLogIn(false);
       setJwtToken("");
       setUserDetails(UserModel.fromJson({}));
-      // await Api.post(body: body, url: url, useAuthToken: true);
+      final response = await FirebaseAuth.instance.signOut();
     } catch (e) {
       throw ApiException('Failed to sign out: $e');
     }
@@ -109,15 +130,35 @@ class AuthRepository {
     }
   }
 
-// Future<UserModel?> fetchUserProfile() async {
-//   try {
-//     return UserModel.fromJson(
-//       await Api.get(url: Api.profile, useAuthToken: true)
-//           .then((value) => value['data']),
-//     );
-//   } catch (e) {
-//     return null;
-//     // throw ApiException(e.toString());
-//   }
-// }
+  Future<List<UserModel>> fetchUsers() async {
+    try {
+      final response = await _database.get();
+      if (response.value != null) {
+        Map<String, dynamic> fetchedData = jsonDecode(
+            jsonEncode(response.value, toEncodable: (e) => e.toString()));
+
+        Map<String, String> users = {};
+        fetchedData.forEach((key, value) {
+          users[key] = value['email'];
+        });
+        //remove current user from the list
+        users.remove(getUserDetails().id);
+        print('users: $users');
+        // convert map to list of UserModel
+        List<UserModel> usersList = users.entries
+            .map((e) => UserModel(
+                  id: e.key,
+                  email: e.value,
+                  userName: e.value.split('@')[0],
+                  fcmId: '',
+                ))
+            .toList();
+        return usersList;
+      }
+      return [];
+    } catch (e) {
+      return [];
+      // throw ApiException(e.toString());
+    }
+  }
 }

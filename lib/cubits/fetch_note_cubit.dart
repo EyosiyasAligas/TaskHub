@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/models/note.dart';
@@ -10,7 +14,7 @@ class FetchNoteInitial extends FetchNoteState {}
 class FetchNoteInProgress extends FetchNoteState {}
 
 class FetchNoteSuccess extends FetchNoteState {
-  final Stream<List<Note>> notes;
+  Stream<List<Note>> notes;
 
   FetchNoteSuccess(this.notes);
 }
@@ -30,40 +34,65 @@ class FetchNoteCubit extends Cubit<FetchNoteState> {
 
   List<Note> get fetchedNotes => _fetchedNotes;
 
+  Stream<List<Note>> streamNote = Stream.empty();
+
   void updateState(FetchNoteState updatedState) {
     emit(updatedState);
   }
 
-  Future<void> fetchNotesOnce({required String userId}) async {
+  Future<List<Note>> fetchNotesOnce({required String userId}) async {
     emit(FetchNoteInProgress());
     try {
       var notes = await _noteRepository.fetchNotes(userId: userId);
       _fetchedNotes = notes;
-      emit(FetchNoteSuccess(Stream.value(notes)));
+      return notes;
     } catch (e) {
       emit(FetchNoteFailure(e.toString()));
+      return [];
     }
   }
 
-  Stream<void>? fetchNotes({required String userId})  {
+  // Future<void> fetchNotesOnce({required String userId}) async {
+  //   emit(FetchNoteInProgress());
+  //   try {
+  //     var notes = await _noteRepository.fetchNotes(userId: userId);
+  //     _fetchedNotes = notes;
+  //     emit(FetchNoteSuccess(Stream.value(notes)));
+  //   } catch (e) {
+  //     emit(FetchNoteFailure(e.toString()));
+  //   }
+  // }
+
+ Stream<DatabaseEvent> fetchNotes({required String userId}) {
     emit(FetchNoteInProgress());
     try {
-      var streamNote =_noteRepository.fetchNotesStream(userId: userId);
-      fetchNotesOnce(userId: userId);
+      var fetch = _noteRepository.fetchNotesStream(userId: userId);
+      // fetchNotesOnce(userId: userId);
       // emit(FetchNoteSuccess(streamNote));
-      print('streamNote: ${streamNote}');
+      return fetch;
     } catch (e) {
       emit(FetchNoteFailure(e.toString()));
+      // return const Stream.empty();
+      throw Exception('Failed to fetch notes: ${e.toString()}');
     }
-    return null;
   }
 
-   Stream<List<Note>> getNotes() {
+  Stream<DatabaseEvent> fetchSingleNotes({required String userId, required String noteId}) {
+    emit(FetchNoteInProgress());
+    try {
+      var fetch = _noteRepository.fetchSingleNotesStream(userId: userId, noteId: noteId);
+      return fetch;
+    } catch (e) {
+      emit(FetchNoteFailure(e.toString()));
+      // return const Stream.empty();
+      throw Exception('Failed to fetch notes: ${e.toString()}');
+    }
+  }
+
+  Stream<List<Note>> getNotes() {
     if (state is FetchNoteSuccess) {
-      List<Note> notes = [];
       return (state as FetchNoteSuccess).notes;
     }
     return const Stream.empty();
   }
-
 }

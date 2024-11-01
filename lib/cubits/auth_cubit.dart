@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_hub/data/models/user.dart';
 
@@ -49,9 +51,17 @@ class AuthCubit extends Cubit<AuthState> {
     ),);
   }
 
+  Future<List<UserModel>> fetchUsers() async {
+    try {
+      return await authRepository.fetchUsers();
+    } catch (e) {
+      return [];
+    }
+  }
+
   UserModel getUserDetails() {
     if (state is Authenticated) {
-      print('user from auth');
+      print('user from auth ${(state as Authenticated).user.id} gg');
       return (state as Authenticated).user;
     }
     return UserModel.fromJson({});

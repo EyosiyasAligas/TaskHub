@@ -4,7 +4,8 @@ import 'package:flutter_svg/svg.dart';
 
 class ErrorContainer extends StatelessWidget {
   final String? errorMessageCode;
-  final String? errorMessageText; //use when not using code
+  final String? errorMessageText;
+  final String? buttonText;
   final bool? showRetryButton;
   final bool? showErrorImage;
   final Color? errorMessageColor;
@@ -23,7 +24,7 @@ class ErrorContainer extends StatelessWidget {
     this.showErrorImage,
     this.retryButtonBackgroundColor,
     this.retryButtonTextColor,
-    this.showRetryButton,
+    this.showRetryButton, this.buttonText,
   });
 
   @override
@@ -89,7 +90,7 @@ class ErrorContainer extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      'Retry',
+                      buttonText ?? 'Retry',
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.onPrimary),
                     ),

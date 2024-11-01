@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -7,6 +9,7 @@ import 'package:task_hub/data/repository/note_repository.dart';
 
 import '../../../../app/routes.dart';
 import '../../../../cubits/auth_cubit.dart';
+import '../../../../cubits/edit_note_cubit.dart';
 import '../../../../cubits/fetch_note_cubit.dart';
 import '../../../../data/models/note.dart';
 import '../../../../utils/ui_utils.dart';
@@ -43,11 +46,19 @@ class _NoteContainerState extends State<NoteContainer> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    Future.delayed(Duration.zero, () {
-      context
-          .read<FetchNoteCubit>()
-          .fetchNotes(userId: context.read<AuthCubit>().getUserDetails().id);
-    });
+    // context
+    //     .read<FetchNoteCubit>()
+    //     .fetchNotesOnce(userId: context.read<AuthCubit>().getUserDetails().id);
+
+    // Future.delayed(Duration.zero, () {
+    //   context
+    //       .read<FetchNoteCubit>()
+    //       .fetchNotesOnce(userId: context.read<AuthCubit>().getUserDetails().id)
+    //       .then((value) => fetchedNotes = value);
+    //   // context
+    //   //     .read<FetchNoteCubit>()
+    //   //     .fetchNotes(userId: context.read<AuthCubit>().getUserDetails().id);
+    // });
   }
 
   Widget buildBody(ThemeData themeData, Size size, List<Note> notes) {
@@ -113,52 +124,68 @@ class _NoteContainerState extends State<NoteContainer> {
         : [];
     return Dismissible(
       key: Key(note.id),
-      onDismissed: (direction) {
-        note.isArchived = !note.isArchived;
-        fetchedNotes.remove(note);
-        selectedNotes.remove(note);
-        setState(() {});
-        UiUtils.showSnackBar(context, 'Note archived', successColor,
-            label: 'Undo', onPressed: () {
-          note.isArchived = !note.isArchived;
-          fetchedNotes.add(note);
-          setState(() {});
-        });
-      },
+      onDismissed: null,
+      // onDismissed: (direction) {
+      //   note.isArchived = true;
+      //   fetchedNotes.remove(note);
+      //   selectedNotes.remove(note);
+      //   setState(() {});
+      //   // context.read<EditNoteCubit>().editNote(
+      //   //       note: note,
+      //   //     );
+      //   setState(() {});
+      //   UiUtils.showSnackBar(
+      //     context,
+      //     'Note archived',
+      //     successColor,
+      //     // label: 'Undo',
+      //     // onPressed: () {
+      //     //   note.isArchived = false;
+      //     //   fetchedNotes.add(note);
+      //     //   setState(() {});
+      //     // },
+      //   );
+      // },
       child: GestureDetector(
         onLongPress: () {
-          if (!selectedNotes.contains(note)) {
-            isLongPressed = true;
+          if (selectedNotes.any((element) => element.id == note.id)) {
+            // isLongPressed = false;
+            // setState(() {
+            //   selectedNotes.remove(note);
+            //   selectedNotes.clear();
+            // });
+          } else {
+            // isLongPressed = true;
             setState(() {
+              // selectedNotes.remove(note);
               selectedNotes.add(note);
             });
-          } else {
-            isLongPressed = true;
-            setState(() {
-              selectedNotes.remove(note);
-            });
+            print('selectedNotes: $selectedNotes');
           }
-          if (selectedNotes.isEmpty) {
-            isLongPressed = false;
-          }
+          // if (selectedNotes.isEmpty) {
+          //   isLongPressed = false;
+          // }
         },
         onTap: () {
-          if (isLongPressed && selectedNotes.isNotEmpty) {
-            if (!selectedNotes.contains(note)) {
-              setState(() {
-                selectedNotes.add(note);
-              });
-            } else {
+          if (selectedNotes.isNotEmpty) {
+            if (selectedNotes.any((element) => element.id == note.id)) {
               setState(() {
                 selectedNotes.remove(note);
               });
+              setState(() {});
+            } else {
+              setState(() {
+                selectedNotes.add(note);
+              });
+              setState(() {});
             }
           } else {
-            Navigator.pushNamed(context, Routes.addOrEditNote, arguments: note);
+            Navigator.pushNamed(context, Routes.addOrEditNote,
+                arguments: note.id);
           }
-          if (selectedNotes.isEmpty) {
-            isLongPressed = false;
-          }
+          // if (selectedNotes.isEmpty) {
+          //   isLongPressed = false;
+          // }
         },
         child: Container(
           padding: const EdgeInsets.all(5.0),
@@ -169,9 +196,10 @@ class _NoteContainerState extends State<NoteContainer> {
           decoration: BoxDecoration(
             color: note.color == null || note.color!.isEmpty
                 ? Colors.transparent
-                : Color(note.color!.hashCode),
+                : adjustColorIntensity(
+                    note.color!, themeData.scaffoldBackgroundColor, context),
             border: Border.all(
-              color: selectedNotes.contains(note)
+              color: selectedNotes.any((element) => element.id == note.id)
                   ? themeData.primaryColorLight
                   : note.color!.isEmpty
                       ? Colors.grey.shade400
@@ -187,6 +215,7 @@ class _NoteContainerState extends State<NoteContainer> {
                   ? Text(
                       note.title,
                       style: TextStyle(
+                        // color: themeData.textTheme.titleLarge!.color!,
                         fontSize: UiUtils.screenTitleFontSize - 2,
                         fontWeight: FontWeight.bold,
                       ),
@@ -265,6 +294,33 @@ class _NoteContainerState extends State<NoteContainer> {
                         ],
                       ),
                     ),
+                  if(note.reminder != null) const SizedBox(height: 5),
+                  if(note.reminder != null)
+                    Chip(
+                      side: const BorderSide(
+                        color: Colors.transparent,
+                        width: 0,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      // labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+                      elevation: 0,
+                      color: MaterialStateColor.resolveWith(
+                            (states) => note.color!.isNotEmpty && note.color!.isNotEmpty
+                            ? adjustColorIntensity(
+                            note.color!, themeData.scaffoldBackgroundColor, context)
+                            .withOpacity(0.5)
+                            : themeData.textTheme.bodySmall!.color!.withOpacity(0.2),
+                      ),
+                      surfaceTintColor: Colors.transparent,
+                      // visualDensity: VisualDensity.compact,
+                      label: Text(
+                        UiUtils.getReminderTime(note.reminder!),
+                        style: TextStyle(
+                          fontSize: UiUtils.screenSubTitleFontSize - 3,
+                          color: themeData.textTheme.titleSmall!.color,
+                        ),
+                      ),
+                    ),
                   if (note.tags.isNotEmpty) const SizedBox(height: 5),
                   if (note.tags.isNotEmpty)
                     Wrap(
@@ -287,12 +343,14 @@ class _NoteContainerState extends State<NoteContainer> {
                                 const EdgeInsets.symmetric(horizontal: 5),
                             elevation: 0,
                             color: MaterialStateColor.resolveWith(
-                              (states) =>
-                                  note.color != null && note.color!.isNotEmpty
-                                      ? Color(note.color!.hashCode - 0xFD000)
-                                          .withOpacity(0.5)
-                                      : themeData.textTheme.bodySmall!.color!
-                                          .withOpacity(0.2),
+                              (states) => note.color != null
+                                  ? adjustColorIntensity(
+                                          note.color!,
+                                          themeData.scaffoldBackgroundColor,
+                                          context)
+                                      .withOpacity(0.5)
+                                  : themeData.textTheme.bodySmall!.color!
+                                      .withOpacity(0.2),
                             ),
                             surfaceTintColor: Colors.transparent,
                             visualDensity: VisualDensity.compact,
@@ -301,7 +359,7 @@ class _NoteContainerState extends State<NoteContainer> {
                                   ? '+$tagsPlus'
                                   : note.tags[index],
                               style: TextStyle(
-                                fontSize: UiUtils.screenSubTitleFontSize - 5,
+                                fontSize: UiUtils.screenSubTitleFontSize - 2,
                                 color: themeData.textTheme.titleSmall!.color,
                               ),
                             ),
@@ -463,6 +521,101 @@ class _NoteContainerState extends State<NoteContainer> {
     );
   }
 
+  Widget buildColorSelector(ThemeData themeData, Size size, List<Note> notes) {
+    return BlocProvider(
+      create: (context) => EditNoteCubit(NoteRepository()),
+      child: StatefulBuilder(builder: (context, setStat) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          height: MediaQuery.of(context).orientation == Orientation.portrait
+              ? size.height * 0.3
+              : size.height * 0.5,
+          color: notes.length == 1 && notes.first.color!.isNotEmpty
+              ? adjustColorIntensity(
+              notes.first.color!, themeData.scaffoldBackgroundColor, context)
+              : themeData.scaffoldBackgroundColor,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Color'),
+              Container(
+                height:
+                    MediaQuery.of(context).orientation == Orientation.portrait
+                        ? size.height * 0.2
+                        : size.height * 0.3,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.all(8),
+                  itemCount: noteColors.length,
+                  itemBuilder: (context, index) {
+                    return GestureDetector(
+                      onTap: () {
+                        for (var note in notes) {
+                          if (note.color !=
+                              '0x${noteColors[index].value.toRadixString(16)
+                                  .padLeft(8, '0')}') {
+                            note.color =
+                            '0x${noteColors[index].value.toRadixString(16)
+                                .padLeft(8, '0')}';
+                            setStat(() {});
+                            setState(() {});
+                            context.read<EditNoteCubit>().editNote(note: note);
+                          }
+                          if (noteColors[index] == Colors.transparent) {
+                            note.color = '';
+                            setStat(() {});
+                            setState(() {});
+                            context.read<EditNoteCubit>().editNote(note: note);
+                          } else {}
+                        }
+                        Navigator.pop(context);
+                        selectedNotes.clear();
+                      },
+                      child: Container(
+                        // padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            width: 2,
+                            color: notes.length == 1 && notes.first.color!.isEmpty
+                                ? themeData.primaryColorLight.withOpacity(0.5)
+                                : notes.length == 1 && notes.first.color! ==
+                                        '0x${noteColors[index].value.toRadixString(16).padLeft(8, '0')}'
+                                    ? Colors.white
+                                    : Colors.transparent,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 25,
+                          backgroundColor:
+                              noteColors[index] == Colors.transparent
+                                  ? themeData.scaffoldBackgroundColor
+                                      .withOpacity(0.9)
+                                  : noteColors[index],
+                          child:
+                                  noteColors[index] == Colors.transparent
+                              ? const Icon(Icons.format_color_reset_outlined)
+                              : notes.length == 1 && notes.first.color! ==
+                                      '0x${noteColors[index].value.toRadixString(16).padLeft(8, '0')}'
+                                  ? const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var themeData = Theme.of(context);
@@ -497,8 +650,24 @@ class _NoteContainerState extends State<NoteContainer> {
               actions: [
                 IconButton(
                   onPressed: () {
-                    for (var note in selectedNotes) {
-                      note.isPinned = !note.isPinned;
+                    if (selectedNotes
+                        .where((element) => element.isPinned)
+                        .isNotEmpty) {
+                      for (var note in selectedNotes) {
+                        note.isPinned = false;
+                        context.read<EditNoteCubit>().editNote(
+                              note: note,
+                            );
+                        setState(() {});
+                      }
+                    } else {
+                      for (var note in selectedNotes) {
+                        note.isPinned = true;
+                        context.read<EditNoteCubit>().editNote(
+                              note: note,
+                            );
+                        setState(() {});
+                      }
                     }
                     selectedNotes.clear();
                     setState(() {});
@@ -506,14 +675,49 @@ class _NoteContainerState extends State<NoteContainer> {
                   icon: const Icon(Icons.push_pin),
                 ),
                 IconButton(
-                  onPressed: () {
-                    // Navigator.pushNamed(context, Routes.addOrEditNote);
+                  onPressed: () async {
+                    var selectedDate = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (selectedDate != null) {
+                      var selectedTime = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (selectedTime != null) {
+                        for (var note in selectedNotes) {
+                          note.reminder = DateTime(
+                            selectedDate.year,
+                            selectedDate.month,
+                            selectedDate.day,
+                            selectedTime.hour,
+                            selectedTime.minute,
+                          );
+                          context.read<EditNoteCubit>().editNote(
+                                note: note,
+                              );
+                          setState(() {});
+                        }
+                      }
+                    }
+                    selectedNotes.clear();
+                    setState(() {});
                   },
                   icon: const Icon(Icons.notification_add_outlined),
                 ),
                 IconButton(
                   onPressed: () {
-                    // Navigator.pushNamed(context, Routes.addOrEditNote);
+                    // i want to display a bottom sheet with the color picker
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) {
+                        return buildColorSelector(
+                            themeData, size, selectedNotes);
+                      },
+                    );
                   },
                   icon: const Icon(Icons.color_lens_outlined),
                 ),
@@ -529,8 +733,26 @@ class _NoteContainerState extends State<NoteContainer> {
                       context: context,
                       position: const RelativeRect.fromLTRB(1, 0, 0, 0),
                       items: [
-                        const PopupMenuItem(
-                          child: Text('Archive'),
+                        PopupMenuItem(
+                          child: const Text('Archive'),
+                          onTap: () {
+                            for (var note in selectedNotes) {
+                              note.isArchived = true;
+                              selectedNotes.remove(note);
+                              fetchedNotes.remove(note);
+                              UiUtils.showSnackBar(
+                                  context, 'Note archived', successColor,
+                                  label: 'Undo', onPressed: () {
+                                note.isArchived = false;
+                                fetchedNotes.add(note);
+                                setState(() {});
+                              });
+                            }
+                            selectedNotes.clear();
+
+                            setState(() {});
+                            setState(() {});
+                          },
                         ),
                         const PopupMenuItem(
                           child: Text('Delete'),
@@ -569,34 +791,98 @@ class _NoteContainerState extends State<NoteContainer> {
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (BuildContext context, int index) {
-                        return BlocBuilder<FetchNoteCubit, FetchNoteState>(
-                          builder: (context, state) {
-                            if (state is FetchNoteInProgress) {
+                        return StreamBuilder<DatabaseEvent>(
+                          stream: context.read<FetchNoteCubit>().fetchNotes(
+                              userId: context
+                                  .read<AuthCubit>()
+                                  .getUserDetails()
+                                  .id),
+                          builder: (BuildContext context, snapshot) {
+                            if (snapshot.hasError) {
+                              return ErrorContainer(
+                                onTapRetry: () => context
+                                    .read<FetchNoteCubit>()
+                                    .fetchNotes(
+                                        userId: context
+                                            .read<AuthCubit>()
+                                            .getUserDetails()
+                                            .id),
+                                errorMessageText: snapshot.error.toString(),
+                              );
+                            }
+                            if (snapshot.connectionState ==
+                                    ConnectionState.waiting &&
+                                snapshot.data == null) {
                               return buildNotesShimmer(size);
                             }
-                            if (state is FetchNoteFailure) {
+                            if (!snapshot.hasData &&
+                                snapshot.connectionState ==
+                                    ConnectionState.none) {
                               return ErrorContainer(
-                                errorMessageText: state.errorMessage,
-                                onTapRetry: () {
-                                  context.read<FetchNoteCubit>().fetchNotes(
-                                      userId: context
-                                          .read<AuthCubit>()
-                                          .getUserDetails()
-                                          .id);
-                                },
+                                onTapRetry: () => Navigator.of(context)
+                                    .pushNamed(Routes.addOrEditNote),
+                                buttonText: 'Add note',
+                                errorMessageText: 'No data found',
                               );
                             }
-                            if (state is FetchNoteSuccess) {
-                              // fetchedNotes = state.notes
-                              //     .where((note) => !note.isArchived)
-                              //     .toList();
-                              return StreamBuilder(
-                                builder: (context, snapshot) {
-                                  return buildBody(themeData, size, snapshot.data ?? []);
-                                }, stream: state.notes,
+                            if (snapshot.data!.snapshot.value == null &&
+                                snapshot.connectionState ==
+                                    ConnectionState.active) {
+                              return ErrorContainer(
+                                onTapRetry: () => Navigator.of(context)
+                                    .pushNamed(Routes.addOrEditNote),
+                                buttonText: 'Add note',
+                                errorMessageText: 'No data found',
                               );
                             }
-                            return const SizedBox.shrink();
+                            if (snapshot.hasData) {
+                              if (snapshot.data != null) {
+                                Map<String, dynamic>? fetchedData = jsonDecode(
+                                    jsonEncode(snapshot.data!.snapshot.value,
+                                        toEncodable: (e) => e.toString()));
+                                String userId = context
+                                    .read<AuthCubit>()
+                                    .getUserDetails()
+                                    .id;
+                                String userEmail = context
+                                    .read<AuthCubit>()
+                                    .getUserDetails()
+                                    .email;
+                                fetchedNotes = fetchedData != null &&
+                                        fetchedData.isNotEmpty
+                                    ? fetchedData.entries
+                                        .map((entry) {
+                                          var fnote = Note.fromMap(
+                                              Map<String, dynamic>.from(
+                                                  entry.value));
+                                          if (fnote.createdBy == userId ||
+                                              fnote.collaborators
+                                                  .contains(userEmail)) {
+                                            return fnote;
+                                          } else {
+                                            return null;
+                                          }
+                                        })
+                                        .where((note) =>
+                                            note !=
+                                            null) // Remove any nulls from the list
+                                        .cast<Note>()
+                                        .toList()
+                                    : [];
+                              }
+                              print(
+                                  'selam notes: ${snapshot.data!.snapshot.value}');
+                              if (fetchedNotes.isEmpty) {
+                                return ErrorContainer(
+                                  onTapRetry: () => Navigator.of(context)
+                                      .pushNamed(Routes.addOrEditNote),
+                                  buttonText: 'Add note',
+                                  errorMessageText: 'No data found',
+                                );
+                              }
+                              return buildBody(themeData, size, fetchedNotes);
+                            }
+                            return SizedBox();
                           },
                         );
                       },

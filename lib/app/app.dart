@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:task_hub/utils/notification_service.dart';
 
 import '../cubits/auth_cubit.dart';
 import '../data/repository/auth_repository.dart';
@@ -33,7 +34,7 @@ Future<void> initializeApp() async {
       storageBucket: 'taskhub-d7f7e.appspot.com',
     ),
   );
-  // await NotificationUtility.initializeAwesomeNotification();
+  await NotificationService().initNotifications();
 
   // SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Hive.initFlutter();
@@ -101,6 +102,7 @@ class MyApp extends StatelessWidget {
                   color: Colors.grey.shade800
                 ),
                 iconTheme: IconThemeData(
+                  size: 22,
                   color: Colors.grey.shade800,
                 ),
               ),
@@ -150,6 +152,7 @@ class MyApp extends StatelessWidget {
                     size: 22
                 ),
                 iconTheme: IconThemeData(
+                  size: 22,
                     color: Colors.grey.shade300
                 ),
               ),
@@ -179,7 +182,7 @@ class MyApp extends StatelessWidget {
                 bodyLarge: TextStyle(fontSize: UiUtils.screenTitleFontSize, color: Colors.white),
                 bodyMedium: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.white),
                 bodySmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.white),
-                titleSmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.grey.shade200),
+                titleSmall: TextStyle(fontSize: UiUtils.screenSubTitleFontSize, color: Colors.grey.shade400 ),
               ),
               useMaterial3: true,
             ),

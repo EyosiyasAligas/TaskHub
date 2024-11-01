@@ -22,7 +22,7 @@ class UserModel {
 
   Map<String, dynamic> toJson() {
     final data = <String, dynamic>{};
-    data['id'] = id;
+    data['localId'] = id;
     data['user_name'] = userName;
     data['email'] = email;
     data['fcm_id'] = fcmId;

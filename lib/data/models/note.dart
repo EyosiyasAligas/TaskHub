@@ -22,7 +22,7 @@ class Note {
     this.todoItems,
     required this.createdBy,
     this.isPinned = false,
-    this.color,
+    this.color = '',
     DateTime? createdAt,
     DateTime? updatedAt,
     this.collaborators = const [],
@@ -32,7 +32,7 @@ class Note {
     this.imageUrls,
     this.isTodo = false,
   })
-      : createdAt = createdAt ?? DateTime.now(),
+      : createdAt = createdAt!,
         updatedAt = updatedAt ?? DateTime.now();
 
 
@@ -41,7 +41,7 @@ class Note {
     updatedAt = DateTime.now();
   }
 
-  void updateTodoItems(List<TodoItem> newTodoItems) {
+ void updateTodoItems(List<TodoItem> newTodoItems) {
     todoItems = newTodoItems;
     updatedAt = DateTime.now();
   }
@@ -79,19 +79,19 @@ class Note {
 
     //if any data item is null then it will be replaced by default value
     return Note(
-      id: data['id'] as String,
-      title: data['title'] as String,
-      content: data['content'] as String?,
+      id: data['id'] ?? '' as String,
+      title: data['title'] ?? '' as String,
+      content: data['content'] ?? '' as String?,
       todoItems: data['todoItems'] != null
           ? (data['todoItems'] as List<dynamic>)
           .map((item) => TodoItem.fromMap(Map<String, dynamic>.from(item)))
           .toList()
           : null,
-      createdBy: data['createdBy'] as String,
+      createdBy: data['createdBy'] ?? '' as String,
       isPinned: data['isPinned'] as bool? ?? false,
-      color: data['color'] as String? ?? '',
-      createdAt: DateTime.parse(data['createdAt'] as String),
-      updatedAt: DateTime.parse(data['updatedAt'] as String),
+      color: data['color'] ?? '',
+      createdAt: DateTime.parse(data['createdAt'] ?? DateTime.now().toIso8601String() as String),
+      updatedAt: DateTime.parse(data['updatedAt'] ?? DateTime.now().toIso8601String() as String),
       collaborators: data['collaborators'] != null ? List<String>.from(data['collaborators']) : [],
       reminder: data['reminder'] != null ? DateTime.parse(data['reminder']) : null,
       tags: data['tags'] != null ? List<String>.from(data['tags']) : [],
@@ -110,18 +110,18 @@ class Note {
       'createdBy': createdBy,
       'isPinned': isPinned,
       'color': color,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'createdAt':createdAt.toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
       'collaborators': collaborators,
-      'reminder': reminder,
+      'reminder': reminder?.toIso8601String(),
       'tags': tags,
       'isArchived': isArchived,
       'imageUrls': imageUrls,
       'isTodo': isTodo,
     };
   }
-
 }
+
 class TodoItem {
   String task;
   bool isCompleted;
@@ -143,3 +143,4 @@ class TodoItem {
     };
   }
 }
+

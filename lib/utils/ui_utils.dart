@@ -18,6 +18,63 @@ class UiUtils {
   static GlobalKey<ScaffoldMessengerState> messengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
+  static List<String> months = [
+    // just 3 letters
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  static String getMonth(int index) {
+    return months[index - 1];
+  }
+
+  static String getReminderTime(DateTime date) {
+    final now = DateTime.now();
+    // if it is today i and yesterday i want to show (Today/yeaterday 5:30 AM/PM)
+    // if it is not today or yesterday i want to show (8 Nov 2021 5:30 AM/PM)
+    // if it is past date i want to show (Expired)
+    // i don't want to show 0 hour i want 1 to 12 format and AM and PM
+    if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day) {
+      return 'Today at ${date.hour == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour > 12 ? 'PM' : 'AM'}';
+    } else if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day - 1) {
+      return 'Yesterday at ${date.hour == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour > 12 ? 'PM' : 'AM'}';
+    } else if (date.isBefore(now)) {
+      return 'Expired';
+    } else {
+      return '${getMonth(date.month)} ${date.day} at ${date.hour == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour > 12 ? 'PM' : 'AM'}';
+    }
+  }
+
+  static String getFormattedDate(DateTime date) {
+    // if it is today, return 'Today' and if it is yesterday, return 'Yesterday' and the time
+    final now = DateTime.now();
+    if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day) {
+      return 'Today at ${date.hour == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour > 12 ? 'PM' : 'AM'}';
+    } else if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day - 1) {
+      return 'Yesterday at ${date.hour == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour > 12 ? 'PM' : 'AM'}';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
   static Future<dynamic> showBottomSheet({
     required Widget child,
     required BuildContext context,
@@ -25,6 +82,7 @@ class UiUtils {
   }) async {
     final result = await showModalBottomSheet(
       enableDrag: enableDrag ?? false,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
@@ -117,6 +175,33 @@ class UiUtils {
     messengerKey.currentState!
       ..removeCurrentSnackBar()
       ..showSnackBar(snackBar);
+  }
+
+  static void showAlertDialog(
+      BuildContext context, String title, String message,
+      {String? positiveLabel,
+      String? negativeLabel,
+      VoidCallback? onPositivePressed,
+      VoidCallback? onNegativePressed}) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: <Widget>[
+          if (negativeLabel != null)
+            TextButton(
+              onPressed: onNegativePressed,
+              child: Text(negativeLabel),
+            ),
+          if (positiveLabel != null)
+            TextButton(
+              onPressed: onPositivePressed,
+              child: Text(positiveLabel),
+            ),
+        ],
+      ),
+    );
   }
 
   static String? validateEmail(String email) {
