@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -6,6 +8,7 @@ import '../../../cubits/auth_cubit.dart';
 import '../../../cubits/create_note_cubit.dart';
 import '../../../cubits/edit_note_cubit.dart';
 import '../../../cubits/fetch_note_cubit.dart';
+import '../../../data/models/user.dart';
 import '../../../data/repository/auth_repository.dart';
 import '../../../data/repository/note_repository.dart';
 import '../../widgets/drawer_container.dart';
@@ -39,22 +42,47 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int _currentIndex = 0;
   late TabController _tabController;
+  late UserModel sender;
 
   final List<Widget> _screens = [const NoteContainer(), const ChatContainer()];
+
+  bool isInitStateCompleted = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    sender = context.read<AuthCubit>().getUserDetails();
+    _setUserOnlineStatus(true);
+    isInitStateCompleted = true;
   }
 
   @override
   void dispose() {
+    _setUserOnlineStatus(false);
+    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached || state == AppLifecycleState.inactive || state == AppLifecycleState.hidden) {
+      // WidgetsBinding.instance.removeObserver(this);
+      _setUserOnlineStatus(false);
+    } else if (state == AppLifecycleState.resumed) {
+      // WidgetsBinding.instance.addObserver(this);
+      _setUserOnlineStatus(true);
+    }
+  }
+
+  void _setUserOnlineStatus(bool isOnline) {
+    WidgetsBinding.instance.addObserver(this);
+    context.read<AuthCubit>().setUserStatus(sender.id, isOnline);
   }
 
   Widget buildBottomNavigationBar() {
@@ -88,6 +116,11 @@ class _HomeScreenState extends State<HomeScreen>
         _currentIndex = _tabController.index;
       });
     });
+
+    // if (isInitStateCompleted) {
+    //   WidgetsBinding.instance.addObserver(this);
+    //   _setUserOnlineStatus(false);
+    // }
   }
 
   @override

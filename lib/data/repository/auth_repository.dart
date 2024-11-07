@@ -58,7 +58,7 @@ class AuthRepository {
         'email': email,
         // 'fcm_id': await FirebaseMessaging.instance.getToken(),
         'localId': response.user!.uid,
-        'displayName': '',
+        'displayName': email.split('@')[0],
         'fcm_id': '',
       };
       String? token = await response.user!.getIdToken();
@@ -85,12 +85,13 @@ class AuthRepository {
       await _database.child(response.user!.uid).set({
         'id': response.user!.uid,
         'email': email,
+        'isOnline': true,
       });
       var userMap = {
         'email': email,
         // 'fcm_id': await FirebaseMessaging.instance.getToken(),
         'localId': response.user!.uid,
-        'displayName': '',
+        'displayName': email.split('@')[0],
         'fcm_id': '',
       };
       String? token = await response.user!.getIdToken();
@@ -128,6 +129,16 @@ class AuthRepository {
     } catch (e) {
       throw ApiException('Failed to reset password: $e');
     }
+  }
+
+  Future<void> setUserStatus(String userId, bool isOnline) async {
+    await _database.child(userId).update({'isOnline': isOnline});
+  }
+
+  Stream<DatabaseEvent> getUserStatus(String receiverId) {
+    return FirebaseDatabase.instance
+        .ref('users/$receiverId}/isOnline')
+        .onValue;
   }
 
   Future<List<UserModel>> fetchUsers() async {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_hub/data/models/user.dart';
 
@@ -65,6 +66,14 @@ class AuthCubit extends Cubit<AuthState> {
       return (state as Authenticated).user;
     }
     return UserModel.fromJson({});
+  }
+
+  Future<void> setUserStatus(String userId, bool isOnline) async {
+    await authRepository.setUserStatus(userId, isOnline);
+  }
+
+  Stream<DatabaseEvent>getUserStatus(String receiverId) {
+    return authRepository.getUserStatus(receiverId);
   }
 
   void signOut() {

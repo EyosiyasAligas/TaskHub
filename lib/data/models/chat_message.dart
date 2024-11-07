@@ -1,7 +1,9 @@
 class ChatMessage {
-  final String id;
+  String id;
   final String senderId;
+  final String receiverId;
   final String senderName;
+  final String receiverName;
   final String content;
   final DateTime timestamp;
   final String? imageUrl; // New attribute for image messages
@@ -11,7 +13,9 @@ class ChatMessage {
   ChatMessage({
     required this.id,
     required this.senderId,
+    required this.receiverId,
     required this.senderName,
+    required this.receiverName,
     required this.content,
     required this.timestamp,
     this.imageUrl,
@@ -23,7 +27,9 @@ class ChatMessage {
     return ChatMessage(
       id: map['id'],
       senderId: map['senderId'],
+      receiverId: map['receiverId'],
       senderName: map['senderName'],
+      receiverName: map['receiverName'],
       content: map['content'],
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
       imageUrl: map['imageUrl'],
@@ -36,9 +42,11 @@ class ChatMessage {
     return {
       'id': id,
       'senderId': senderId,
+      'receiverId': receiverId,
       'senderName': senderName,
+      'receiverName': receiverName,
       'content': content,
-      'timestamp': timestamp.millisecondsSinceEpoch,
+        'timestamp': timestamp.millisecondsSinceEpoch,
       'imageUrl': imageUrl,
       'audioUrl': audioUrl,
       'isGroup': isGroup,

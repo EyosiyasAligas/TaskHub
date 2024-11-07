@@ -34,8 +34,38 @@ class UiUtils {
     'Dec',
   ];
 
+  static List<Color> colors = [
+    Colors.red.shade600,
+    Colors.pink.shade600,
+    Colors.purple.shade600,
+    Colors.deepPurple.shade600,
+    Colors.indigo.shade600,
+    Colors.blue.shade600,
+    Colors.lightBlue.shade600,
+    Colors.cyan.shade600,
+    Colors.teal.shade600,
+    Colors.green.shade600,
+    Colors.lightGreen.shade600,
+    Colors.amber.shade600,
+    Colors.orange.shade600,
+    Colors.deepOrange.shade600,
+    Colors.brown.shade600,
+    Colors.grey.shade600,
+    Colors.blueGrey.shade600,
+  ];
+
   static String getMonth(int index) {
     return months[index - 1];
+  }
+
+  static String getChatDate(DateTime date) {
+    final now = DateTime.now();
+    // if it is from this year i want to show (Nov 8) if it is not i want to show (8 Nov 2022)
+    if (date.year == now.year) {
+      return '${getMonth(date.month)} ${date.day}';
+    } else {
+      return '${date.day} ${getMonth(date.month)} ${date.year}';
+    }
   }
 
   static String getReminderTime(DateTime date) {
