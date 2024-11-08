@@ -47,9 +47,13 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController textController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
   FocusNode focusNode = FocusNode();
   bool isReceiverOnline = false;
   File? _imageFile;
+  bool isSearching = false;
+  List<ChatMessage> allMessages = [];
+  List<ChatMessage> filteredMessages = [];
 
   final ImagePicker _picker = ImagePicker();
   final ScrollController listScrollController = ScrollController();
@@ -125,6 +129,22 @@ class _ChatScreenState extends State<ChatScreen> {
   //   launch(fileUrl);
   // }
 
+  void searchMessages(String query) {
+    if (searchController.text.isEmpty) {
+      setState(() {
+        // isSearching = false;
+        filteredMessages = allMessages;
+      });
+    } else {
+      setState(() {
+        // isSearching = true;
+        filteredMessages = allMessages.where((message) {
+          return message.content.toLowerCase().contains(query.toLowerCase());
+        }).toList();
+      });
+    }
+  }
+
   Future<File?> _pickImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(
       source: source,
@@ -148,108 +168,121 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget buildMessagesList(ThemeData themeData, Size size) {
-    return BlocBuilder<FetchChatCubit, FetchChatState>(
-      builder: (context, state) {
-        if (state is FetchChatInProgress) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-        if (state is FetchChatFailure) {
-          return Center(
-            child: Text(state.errorMessage),
-          );
-        }
-        if (state is FetchChatSuccess) {
-          return StreamBuilder(
-            // stream: context.read<FetchChatCubit>().fetchChatMessages(
-            //     receiverId: widget.receiver.id, senderId: sender.id),
-            stream: state.chatMessages,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
-              if (!snapshot.hasData &&
-                  snapshot.connectionState == ConnectionState.done) {
-                return const Center(
-                  child: Text('No messages'),
-                );
-              }
-              if (snapshot.data == null ||
-                  snapshot.data!.snapshot.value == null) {
-                return const Center(
-                  child: Text('No messages'),
-                );
-              }
-              if (snapshot.hasData) {
-                if (snapshot.data!.snapshot.value != null) {
-                  Future.delayed(const Duration(milliseconds: 200))
-                      .then((value) {
-                    scrollToBottom();
-                  });
-                  Map<String, dynamic>? fetchedData = jsonDecode(jsonEncode(
-                      snapshot.data!.snapshot.value,
-                      toEncodable: (e) => e.toString()));
-                  final messages = <ChatMessage>[];
-                  fetchedData?.forEach((key, value) {
-                    messages.add(ChatMessage.fromMap(value));
-                  });
-                  messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-                  // Group messages by date
-                  Map<String, List<ChatMessage>> groupedMessages = {};
-                  for (var message in messages) {
-                    String date = UiUtils.getChatDate(message.timestamp);
-                    if (groupedMessages[date] == null) {
-                      groupedMessages[date] = [];
-                    }
-                    groupedMessages[date]!.add(message);
-                  }
-
-                  return ListView.builder(
-                    controller: listScrollController,
-                    itemCount: groupedMessages.length,
-                    itemBuilder: (context, index) {
-                      String date = groupedMessages.keys.elementAt(index);
-                      List<ChatMessage> dateMessages = groupedMessages[date]!;
-                      // Check if the message is sent by the current user not just the first message
-                      bool isSender = dateMessages.first.senderId == sender.id;
-                      return Column(
-                        // crossAxisAlignment:
-                        // isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Center(
-                              child: Text(
-                                date,
-                                style: themeData.textTheme.bodySmall,
-                              ),
-                            ),
-                          ),
-                          ...dateMessages
-                              .map((message) =>
-                                  buildMessageItem(themeData, size, message))
-                              .toList(),
-                        ],
-                      );
-                    },
+    return Container(
+      child: BlocBuilder<FetchChatCubit, FetchChatState>(
+        builder: (context, state) {
+          if (state is FetchChatInProgress) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          if (state is FetchChatFailure) {
+            return Center(
+              child: Text(state.errorMessage),
+            );
+          }
+          if (state is FetchChatSuccess) {
+            return StreamBuilder(
+              // stream: context.read<FetchChatCubit>().fetchChatMessages(
+              //     receiverId: widget.receiver.id, senderId: sender.id),
+              stream: state.chatMessages,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
                   );
                 }
+                if (!snapshot.hasData &&
+                    snapshot.connectionState == ConnectionState.done) {
+                  return const Center(
+                    child: Text('No messages'),
+                  );
+                }
+                if (snapshot.data == null ||
+                    snapshot.data!.snapshot.value == null) {
+                  return const Center(
+                    child: Text('No messages'),
+                  );
+                }
+                if (snapshot.hasData) {
+                  if (snapshot.data!.snapshot.value != null) {
+                    // Future.delayed(const Duration(milliseconds: 200))
+                    //     .then((value) {
+                    //   scrollToBottom();
+                    // });
+                    Map<String, dynamic>? fetchedData = jsonDecode(jsonEncode(
+                        snapshot.data!.snapshot.value,
+                        toEncodable: (e) => e.toString()));
+                    final messages = <ChatMessage>[];
+                    fetchedData?.forEach((key, value) {
+                      messages.add(ChatMessage.fromMap(value));
+                    });
+                    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+                    allMessages = messages;
+                    filteredMessages =
+                        isSearching ? filteredMessages : allMessages;
+
+                    // Group messages by date
+                    Map<String, List<ChatMessage>> groupedMessages = {};
+                    for (var message in filteredMessages) {
+                      String date = UiUtils.getChatDate(message.timestamp);
+                      if (groupedMessages[date] == null) {
+                        groupedMessages[date] = [];
+                      }
+                      groupedMessages[date]!.add(message);
+                    }
+
+                    List<String> reversedKeys =
+                        groupedMessages.keys.toList().reversed.toList();
+
+                    return ListView.builder(
+                      controller: listScrollController,
+                      reverse: true,
+                      itemCount: reversedKeys.length,
+                      itemBuilder: (context, index) {
+                        String date = groupedMessages.keys.elementAt(index);
+                        List<ChatMessage> dateMessages =
+                            groupedMessages[reversedKeys[index]]!;
+                        // Check if the message is sent by the current user not just the first message
+                        bool isSender =
+                            dateMessages.first.senderId == sender.id;
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Center(
+                                child: Text(
+                                  reversedKeys[index],
+                                  style: themeData.textTheme.bodySmall,
+                                ),
+                              ),
+                            ),
+                            ...dateMessages
+                                .map((message) =>
+                                    buildMessageItem(themeData, size, message))
+                                .toList(),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }
                 return const SizedBox.shrink();
-              }
-              return const SizedBox.shrink();
-            },
-          );
-        }
-        return const SizedBox.shrink();
-      },
+              },
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
     );
   }
 
   Widget buildMessageItem(ThemeData themeData, Size size, ChatMessage message) {
     bool isSender = message.senderId == sender.id;
+    bool isAdmin = message.creatorId == sender.id;
     return Container(
       alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
@@ -265,17 +298,51 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             constraints: BoxConstraints(
               maxWidth: size.width * 0.7,
+              minWidth: size.width * 0.1,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 25),
-            child: message.content.trim().isNotEmpty
-                ? Text(message.content)
-                : _imageFile != null
-                    ? Image.file(
-                        _imageFile!,
-                        fit: BoxFit.cover,
-                      )
-                    : const SizedBox.shrink(),
+            child: IntrinsicWidth(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  if (!isSender)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (message.senderName.isNotEmpty)
+                          Text(
+                            message.senderName,
+                            style: TextStyle(
+                              fontSize: UiUtils.screenSubTitleFontSize + 2,
+                              fontWeight: FontWeight.bold,
+                              color: themeData.textTheme.bodySmall!.color,
+                            ),
+                          ),
+                        if (isAdmin)
+                          Text(
+                            'Admin',
+                            style: themeData.textTheme.titleSmall,
+                          ),
+                      ],
+                    ),
+                  if (message.content.isNotEmpty)
+                    Text(
+                      message.content,
+                      style: TextStyle(
+                          // fontSize: themeData.textTheme.bodyLarge!.fontSize ,
+                          // color: themeData.textTheme.bodyLarge!.color,
+                          ),
+                    ),
+                  if (message.imageUrl != null)
+                    Image.network(
+                      message.imageUrl!,
+                      fit: BoxFit.cover,
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -312,6 +379,7 @@ class _ChatScreenState extends State<ChatScreen> {
             suffixIcon: textController.text.trim().isEmpty && _imageFile == null
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       IconButton(
@@ -332,7 +400,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     ],
                   )
                 : Row(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (_imageFile != null)
                         Image.file(_imageFile!, fit: BoxFit.cover),
@@ -357,7 +427,7 @@ class _ChatScreenState extends State<ChatScreen> {
               receiverName: widget.receiver.userName,
               timestamp: DateTime.now(),
               id: '',
-              senderName: sender.userName,
+              senderName: sender.email.split('@')[0],
             );
             // print('typed Message: ${sendMessage.content}');
             setState(() {});
@@ -415,13 +485,22 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
               ),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.receiver.userName),
-                ],
-              ),
-              subtitle: Row(
+              title: isSearching
+                  ? TextField(
+                      controller: searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Search messages...',
+                        border: InputBorder.none,
+                      ),
+                      onChanged: searchMessages,
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.receiver.userName),
+                      ],
+                    ),
+              subtitle: isSearching ? null : Row(
                 children: [
                   isReceiverOnline
                       ? const Text('Online')
@@ -436,8 +515,22 @@ class _ChatScreenState extends State<ChatScreen> {
           }),
       actions: [
         IconButton(
-          onPressed: () {},
-          icon: Icon(Icons.search),
+          onPressed: () {
+            setState(() {
+              isSearching = !isSearching;
+
+              if (isSearching) {
+                searchController.clear();
+                searchMessages('');
+                // isSearching = false;
+              } else {
+                searchController.clear();
+                searchMessages('');
+                // isSearching = true;
+              }
+            });
+          },
+          icon: Icon(isSearching ? Icons.close : Icons.search),
         ),
       ],
     );

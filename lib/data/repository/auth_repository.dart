@@ -172,4 +172,8 @@ class AuthRepository {
       // throw ApiException(e.toString());
     }
   }
+
+  Stream<DatabaseEvent> fetchUserStream(String userId) {
+    return _database.child(userId).onValue;
+  }
 }

@@ -4,9 +4,11 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/chat_message.dart';
+import '../models/group.dart';
 
 class ChatRepository {
   final DatabaseReference _dbRef = FirebaseDatabase.instance.ref('chat_rooms');
+  final DatabaseReference _rootDbRef = FirebaseDatabase.instance.ref();
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // // Add message
@@ -41,6 +43,44 @@ class ChatRepository {
     //   }
     //   // return messages;
     // });
+  }
+
+  Future<void> createGroup({
+    required Group groupData,
+  }) async {
+    final groupId = _rootDbRef.child('groups').push().key;
+    groupData.id = groupId!;
+
+    await _rootDbRef.child('groups').child(groupId).set(groupData.toJson());
+  }
+
+  Stream<DatabaseEvent> fetchGroups() {
+    return _rootDbRef.child('groups').onValue;
+  }
+
+  Stream<DatabaseEvent> fetchGroupMessages({required String groupId}) {
+    return _dbRef.child('group').child(groupId).onValue;
+  }
+
+  Future<void> addMemberToGroup({
+    required String groupId,
+    required List<String> memberIds,
+  }) async {
+    // memberIds to Map<String, Object?>
+    final Map<String, Object?> memberMap = {};
+    memberIds.asMap().forEach((index, memberId) {
+      memberMap['$index'] = memberId;
+    });
+
+
+    await _rootDbRef.child('groups').child(groupId).child('members').update(memberMap);
+  }
+
+  Future<void> sendGroupMessage({
+    required String groupId,
+    required ChatMessage message,
+  }) async {
+    await _dbRef.child('group').child(groupId).push().update(message.toMap());
   }
 
   // Upload multimedia

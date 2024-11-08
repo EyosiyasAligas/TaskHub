@@ -1,12 +1,17 @@
+import 'dart:convert';
+
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_hub/cubits/auth_cubit.dart';
+import 'package:task_hub/cubits/create_group_cubit.dart';
+import 'package:task_hub/data/models/group.dart';
 import 'package:task_hub/data/repository/note_repository.dart';
 
 import '../../../../app/routes.dart';
+import '../../../../cubits/fetch_group_cubit.dart';
 import '../../../../data/models/user.dart';
 import '../../../../utils/ui_utils.dart';
 import '../../../styles/colors.dart';
@@ -22,6 +27,12 @@ class _ChatContainerState extends State<ChatContainer>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<UserModel> users = [];
+  List<bool> isUserSelected = [];
+
+  var currentTabIndex = 0;
+
+  TextEditingController groupNameController = TextEditingController();
+  TextEditingController groupMembersController = TextEditingController();
 
   //add shade of  600 colors to the list
 
@@ -33,7 +44,191 @@ class _ChatContainerState extends State<ChatContainer>
     _tabController = TabController(length: 2, vsync: this);
     Future.delayed(Duration.zero, () async {
       users = await context.read<AuthCubit>().fetchUsers();
+      isUserSelected = List.generate(users.length, (index) => false);
+      context.read<FetchGroupCubit>().fetchGroups();
       print('Users from chat: $users');
+    });
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    _tabController.dispose();
+    groupMembersController.dispose();
+    groupNameController.dispose();
+  }
+
+  void createGroup(Group group) {
+    context.read<CreateGroupCubit>().createGroup(groupData: group);
+  }
+
+  Widget buildAddGroup(ThemeData themeData, Size size) {
+    return StatefulBuilder(builder: (context, setStat) {
+      return SingleChildScrollView(
+        child: Container(
+          height: size.height * 0.8,
+          color: themeData.scaffoldBackgroundColor,
+          alignment: Alignment.bottomLeft,
+          padding: EdgeInsets.only(
+              right: 10, bottom: MediaQuery.of(context).padding.bottom),
+          child: Column(
+            children: [
+              //build a section to add group name and members
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Create Group',
+                      style: themeData.textTheme.bodyLarge,
+                    ),
+                    TextField(
+                      controller: groupNameController,
+                      decoration: const InputDecoration(
+                        hintText: 'Group Name',
+                      ),
+                      onChanged: (value) {
+                        setStat(() {});
+                      },
+                    ),
+                    const SizedBox(height: 25),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Users',
+                          // style: themeData.textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 5),
+                        const SizedBox(height: 5),
+                        ...List.generate(users.length, (index) {
+                          return GestureDetector(
+                            onTap: () {
+                              isUserSelected[index] = !isUserSelected[index];
+
+                              setStat(() {});
+                              setState(() {});
+                            },
+                            child: ListTile(
+                              minVerticalPadding: 20,
+                              leading: Container(
+                                // padding: const EdgeInsets.all(8),
+                                margin: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    width: 2,
+                                    color: isUserSelected[index]
+                                        ? themeData.primaryColorLight
+                                        : themeData.colorScheme.onPrimary
+                                            .withOpacity(0.5),
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 25,
+                                  backgroundColor: Colors.transparent,
+                                  child: Text(
+                                    users[index].userName[0].toUpperCase(),
+                                    style: TextStyle(
+                                      color:
+                                          themeData.textTheme.titleSmall!.color,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              title: Text(
+                                users[index].email,
+                                style: TextStyle(
+                                  color: themeData.textTheme.titleSmall!.color,
+                                ),
+                              ),
+                              subtitle: Divider(),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      alignment: Alignment.center,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (groupNameController.text.isNotEmpty) {
+                            List<String> selectedUsers = [];
+                            selectedUsers = users
+                                .where((element) =>
+                            isUserSelected[users.indexOf(element)])
+                                .map((e) => e.id)
+                                .toList();
+                            selectedUsers.add(context
+                                .read<AuthCubit>()
+                                .getUserDetails()
+                                .id);
+                            createGroup(
+                              Group(
+                                name: groupNameController.text,
+                                members: selectedUsers,
+                                id: '',
+                                creatorId: context
+                                    .read<AuthCubit>()
+                                    .getUserDetails()
+                                    .id,
+                                lastMessage: '',
+                                lastMessageTime: '',
+                              ),
+                            );
+                            Navigator.pop(context);
+                            UiUtils.showSnackBar(
+                              context,
+                              'Group Created',
+                              successColor,
+                            );
+                            isUserSelected = List.generate(users.length, (index) => false);
+                            groupNameController.clear();
+                          } else {
+                            UiUtils.showOverlay(
+                              context,
+                              'Group name cannot be empty',
+                              themeData.errorColor,
+                            );
+                          }
+                        },
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all(
+                              themeData.colorScheme.primary),
+                          shape: MaterialStateProperty.all(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Create Group',
+                          style: themeData.textTheme.bodySmall,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    // TODO: implement didChangeDependencies
+    super.didChangeDependencies();
+    _tabController.addListener(() {
+      currentTabIndex = _tabController.index;
+      setState(() {});
     });
   }
 
@@ -41,7 +236,24 @@ class _ChatContainerState extends State<ChatContainer>
   Widget build(BuildContext context) {
     final themeData = Theme.of(context);
     final size = MediaQuery.sizeOf(context);
+    currentTabIndex = _tabController.index;
+
     return Scaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: currentTabIndex == 1
+          ? Container(
+              padding: EdgeInsets.only(
+                  right: 10, bottom: MediaQuery.of(context).padding.bottom),
+              child: FloatingActionButton(
+                isExtended: true,
+                onPressed: () {
+                  UiUtils.showBottomSheet(
+                      child: buildAddGroup(themeData, size), context: context);
+                },
+                child: const Icon(Icons.add),
+              ),
+            )
+          : null,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(
@@ -75,8 +287,15 @@ class _ChatContainerState extends State<ChatContainer>
           ),
         ],
         bottom: TabBar(
+          onTap: (index) {
+            _tabController.addListener(() {
+              setState(() {
+                currentTabIndex = _tabController.index;
+              });
+            });
+          },
           controller: _tabController,
-          tabs: [
+          tabs: const [
             Tab(
               text: 'Personal',
             ),
@@ -90,101 +309,187 @@ class _ChatContainerState extends State<ChatContainer>
         // constraints: BoxConstraints(
         //   maxHeight: size.height,
         // ),
-        child: FutureBuilder(
-          future: context.read<AuthCubit>().fetchUsers(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData)
-              return Center(child: CircularProgressIndicator());
-            return TabBarView(
-
-              // dragStartBehavior: DragStartBehavior.start,
-              controller: _tabController,
-              children: [
-                SingleChildScrollView(
-                  child: Container(
-                    // color: themeData.colorScheme.primary,
-                    alignment: Alignment.topLeft,
-                    padding: EdgeInsets.only(top: size.height * 0.02),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: List.generate(snapshot.data!.length, (index) {
-                        return ListTile(
-                          minVerticalPadding: 10,
-                          leading: Padding(
-                            padding: const EdgeInsets.only(right: 22.0, left: 5),
-                            child: Stack(
+        child: TabBarView(
+          dragStartBehavior: DragStartBehavior.start,
+          controller: _tabController,
+          children: [
+            FutureBuilder(
+                future: context.read<AuthCubit>().fetchUsers(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return SingleChildScrollView(
+                    child: Container(
+                      // color: themeData.colorScheme.primary,
+                      alignment: Alignment.topLeft,
+                      padding: EdgeInsets.only(top: size.height * 0.02),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: List.generate(snapshot.data!.length, (index) {
+                          return ListTile(
+                            minVerticalPadding: 10,
+                            leading: Padding(
+                              padding:
+                                  const EdgeInsets.only(right: 22.0, left: 5),
+                              child: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 28,
+                                    backgroundColor: UiUtils.colors[
+                                        index % UiUtils.colors.length + 1],
+                                    child: Text(
+                                      snapshot.data![index].userName.characters
+                                          .first
+                                          .toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize:
+                                            UiUtils.screenTitleFontSize + 4,
+                                        color:
+                                            themeData.colorScheme.onSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                  StreamBuilder(
+                                      stream: FirebaseDatabase.instance
+                                          .ref(
+                                              'users/${snapshot.data![index].id}/isOnline')
+                                          .onValue,
+                                      builder: (context, streamSnapshot) {
+                                        bool isReceiverOnline = false;
+                                        streamSnapshot.data?.snapshot.value
+                                                    .toString() ==
+                                                'true'
+                                            ? isReceiverOnline = true
+                                            : isReceiverOnline = false;
+                                        //print id
+                                        print(
+                                            'id: ${snapshot.data![index].id}');
+                                        print(
+                                            'isReceiverOnline: ${streamSnapshot.data?.snapshot.value.toString()}');
+                                        if (isReceiverOnline) {
+                                          return Positioned(
+                                            right: 0,
+                                            bottom: 0,
+                                            child: Container(
+                                              height: 10,
+                                              width: 10,
+                                              decoration: const BoxDecoration(
+                                                color: Colors.green,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return const SizedBox();
+                                      }),
+                                ],
+                              ),
+                            ),
+                            title: Text(snapshot.data![index].userName),
+                            trailing: const Text('3:46 PM'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                CircleAvatar(
-                                  radius: 28,
-                                  backgroundColor: UiUtils
-                                      .colors[index % UiUtils.colors.length + 1],
-                                  child: Text(
-                                    snapshot
-                                        .data![index].userName.characters.first
+                                Text(snapshot.data![index].email),
+                                const Divider(),
+                              ],
+                            ),
+                            onTap: () {
+                              Navigator.pushNamed(context, Routes.chatScreen,
+                                  arguments: snapshot.data![index]);
+                            },
+                          );
+                        }),
+                      ),
+                    ),
+                  );
+                }),
+            StreamBuilder(
+              stream: context
+                  .read<FetchGroupCubit>()
+                  .fetchGroups()
+                  .asBroadcastStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    snapshot.connectionState == ConnectionState.active) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return const Center(child: Text('An error occurred'));
+                }
+                if (snapshot.hasData) {
+                  if (snapshot.data!.snapshot.value != null) {
+                    Map<String, dynamic>? fetchedData = jsonDecode(jsonEncode(
+                        snapshot.data!.snapshot.value,
+                        toEncodable: (e) => e.toString()));
+                    List<Group> groups = [];
+                    // check if user id is in the members and show only if true
+
+                    groups = fetchedData!
+                        .map((key, value) {
+                          return MapEntry(key, Group.fromJson(value));
+                        })
+                        .values.where((element) => element.members.contains(context.read<AuthCubit>().getUserDetails().id ))
+                        .toList();
+                    if(groups.isEmpty){
+                      return const Center(
+                        child: Text('No group is available'),
+                      );
+                    }
+                    return Container(
+                      // color: themeData.colorScheme.primary,
+                      alignment: Alignment.topLeft,
+                      padding: EdgeInsets.only(top: size.height * 0.02),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: List.generate(groups.length, (index) {
+                          return ListTile(
+                            minVerticalPadding: 10,
+                            leading: Padding(
+                              padding:
+                                  const EdgeInsets.only(right: 22.0, left: 5),
+                              child: Stack(
+                                children: [
+                                  Text(
+                                    groups[index]
+                                        .name
+                                        .characters
+                                        .first
                                         .toUpperCase(),
                                     style: TextStyle(
                                       fontSize: UiUtils.screenTitleFontSize + 4,
                                       color: themeData.colorScheme.onSecondary,
                                     ),
                                   ),
-                                ),
-                                StreamBuilder(
-                                  stream: FirebaseDatabase.instance
-                                      .ref('users/${snapshot
-                                      .data![index].id}/isOnline')
-                                      .onValue,
-                                  builder: (context, streamSnapshot) {
-                                    bool isReceiverOnline = false;
-                                    streamSnapshot.data?.snapshot.value.toString() == 'true'
-                                        ? isReceiverOnline = true
-                                        : isReceiverOnline = false;
-                                    //print id
-                                    print('id: ${snapshot.data![index].id}');
-                                    print('isReceiverOnline: ${streamSnapshot.data?.snapshot.value.toString()}');
-                                    if (isReceiverOnline) {
-                                      return Positioned(
-                                        child: Container(
-                                          height: 10,
-                                          width: 10,
-                                          decoration: BoxDecoration(
-                                            color: Colors.green,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        right: 0,
-                                        bottom: 0,
-                                      );
-                                    }
-                                    return SizedBox();
-                                  }
-                                ),
+                                ],
+                              ),
+                            ),
+                            title: Text(groups[index].name),
+                            trailing: Text(groups[index].lastMessageTime),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(groups[index].lastMessage),
+                                const Divider(),
                               ],
                             ),
-                          ),
-                          title: Text(snapshot.data![index].userName),
-                          trailing: Text('3:46 PM'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(snapshot.data![index].email),
-                              Divider(),
-                            ],
-                          ),
-                          onTap: () {
-                            Navigator.pushNamed(context, Routes.chatScreen,
-                                arguments: snapshot.data![index]);
-                          },
-                        );
-                      }),
-                    ),
-                  ),
-                ),
-                Tab(
-                  text: 'Group',
-                ),
-              ],
-            );
-          },
+                            onTap: () {
+                              Navigator.pushNamed(context, Routes.groupChatScreen,
+                                  arguments: groups[index]);
+                            },
+                          );
+                        }),
+                      ),
+                    );
+                  }
+                }
+                return const Center(
+                  child: Text('No groups available'),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );

@@ -76,6 +76,10 @@ class AuthCubit extends Cubit<AuthState> {
     return authRepository.getUserStatus(receiverId);
   }
 
+  Stream<DatabaseEvent> fetchUserStream(String userId) {
+    return authRepository.fetchUserStream(userId);
+  }
+
   void signOut() {
     authRepository.signOut(state is Authenticated ? (state as Authenticated).jwtToken : "");
     emit(Unauthenticated());

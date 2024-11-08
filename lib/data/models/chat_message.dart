@@ -8,6 +8,9 @@ class ChatMessage {
   final DateTime timestamp;
   final String? imageUrl; // New attribute for image messages
   final String? audioUrl; // New attribute for audio messages
+  final String? creatorId; // New attribute for group messages
+  final String? groupName; // New attribute for group messages
+  final List<String>? groupMembers; // New attribute for group messages
   final bool isGroup;
 
   ChatMessage({
@@ -20,6 +23,9 @@ class ChatMessage {
     required this.timestamp,
     this.imageUrl,
     this.audioUrl,
+    this.creatorId,
+    this.groupName,
+    this.groupMembers,
     this.isGroup = false,
   });
 
@@ -34,6 +40,9 @@ class ChatMessage {
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
       imageUrl: map['imageUrl'],
       audioUrl: map['audioUrl'],
+      creatorId: map['creatorId'],
+      groupName: map['groupName'],
+      groupMembers: List<String>.from(map['groupMembers'] ?? {}),
       isGroup: map['isGroup'] ?? false,
     );
   }
@@ -49,6 +58,9 @@ class ChatMessage {
         'timestamp': timestamp.millisecondsSinceEpoch,
       'imageUrl': imageUrl,
       'audioUrl': audioUrl,
+      'creatorId': creatorId,
+      'groupName': groupName,
+      'groupMembers': groupMembers,
       'isGroup': isGroup,
     };
   }

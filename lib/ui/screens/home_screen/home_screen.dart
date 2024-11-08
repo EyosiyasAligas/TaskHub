@@ -5,11 +5,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/routes.dart';
 import '../../../cubits/auth_cubit.dart';
+import '../../../cubits/create_group_cubit.dart';
 import '../../../cubits/create_note_cubit.dart';
 import '../../../cubits/edit_note_cubit.dart';
+import '../../../cubits/fetch_group_cubit.dart';
 import '../../../cubits/fetch_note_cubit.dart';
 import '../../../data/models/user.dart';
 import '../../../data/repository/auth_repository.dart';
+import '../../../data/repository/chat_repository.dart';
 import '../../../data/repository/note_repository.dart';
 import '../../widgets/drawer_container.dart';
 import 'widgets/chat_container.dart';
@@ -33,6 +36,12 @@ class HomeScreen extends StatefulWidget {
           ),
           BlocProvider<EditNoteCubit>(
             create: (_) => EditNoteCubit(NoteRepository()),
+          ),
+          BlocProvider<FetchGroupCubit>(
+            create: (_) => FetchGroupCubit(ChatRepository()),
+          ),
+          BlocProvider<CreateGroupCubit>(
+            create: (_) => CreateGroupCubit(ChatRepository()),
           ),
         ],
         child: const HomeScreen(),
