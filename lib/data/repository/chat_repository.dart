@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_database/firebase_database.dart';
@@ -23,7 +25,11 @@ class ChatRepository {
     List<String> ids = [receiverId, senderId];
     ids.sort();
     final chatRoomId = ids.join('_');
-    await _dbRef.child('private').child(chatRoomId).push().update(message.toMap());
+    await _dbRef
+        .child('private')
+        .child(chatRoomId)
+        .push()
+        .update(message.toMap());
   }
 
   // Fetch messages
@@ -32,7 +38,11 @@ class ChatRepository {
     List<String> ids = [receiverId, senderId];
     ids.sort();
     final chatRoomId = ids.join('_');
-    return _dbRef.child('private').child(chatRoomId).orderByChild('timestamp').onValue;
+    return _dbRef
+        .child('private')
+        .child(chatRoomId)
+        .orderByChild('timestamp')
+        .onValue;
     // return _dbRef.child(chatRoomId).orderByChild('timestamp').onValue.map((event) {
     //   final messages = <ChatMessage>[];
     //   final data = event.snapshot.value;
@@ -54,8 +64,27 @@ class ChatRepository {
     await _rootDbRef.child('groups').child(groupId).set(groupData.toJson());
   }
 
-  Stream<DatabaseEvent> fetchGroups() {
-    return _rootDbRef.child('groups').onValue;
+  Stream<List<Group>> fetchGroups() async* {
+    List<Group> groups = [];
+
+   yield* _rootDbRef.child('groups').onValue.map((event) {
+      Map<String, dynamic>? fetchedData = jsonDecode(
+          jsonEncode(event.snapshot.value, toEncodable: (e) => e.toString()));
+
+      if (fetchedData != null) {
+        groups = fetchedData
+            .map(
+              (key, value) {
+            return MapEntry(key, Group.fromJson(value));
+          },
+        )
+            .values
+            .toList();
+      }
+
+      print('Groups from repository: $groups');
+      return groups;
+    });
   }
 
   Stream<DatabaseEvent> fetchGroupMessages({required String groupId}) {
@@ -72,8 +101,11 @@ class ChatRepository {
       memberMap['$index'] = memberId;
     });
 
-
-    await _rootDbRef.child('groups').child(groupId).child('members').update(memberMap);
+    await _rootDbRef
+        .child('groups')
+        .child(groupId)
+        .child('members')
+        .update(memberMap);
   }
 
   Future<void> sendGroupMessage({

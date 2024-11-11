@@ -334,71 +334,60 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     bool isAdmin = message.creatorId == sender.id;
     return Container(
       alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment:
-            isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          if (!isSender)
-            Text(
-              message.senderName,
-              style: themeData.textTheme.bodySmall,
-            ),
-          Container(
-            decoration: BoxDecoration(
-              color: isSender
-                  ? themeData.colorScheme.primary.withOpacity(0.3)
-                  : themeData.colorScheme.secondary.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            constraints: BoxConstraints(
-              maxWidth: size.width * 0.7,
-              minWidth: size.width * 0.1,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 25),
-            child: IntrinsicWidth(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  if (!isSender)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (message.senderName.isNotEmpty)
-                          Text(
-                            message.senderName,
-                            style: TextStyle(
-                              fontSize: UiUtils.screenSubTitleFontSize + 2,
-                              fontWeight: FontWeight.bold,
-                              color: themeData.textTheme.bodySmall!.color,
-                            ),
-                          ),
-                        if (isAdmin)
-                          Text(
-                            'Admin',
-                            style: themeData.textTheme.titleSmall,
-                          ),
-                      ],
-                    ),
-                  if (message.content.isNotEmpty)
-                    Text(
-                      message.content,
-                      style: const TextStyle(
-                          // fontSize: themeData.textTheme.bodyLarge!.fontSize ,
-                          // color: themeData.textTheme.bodyLarge!.color,
-                          ),
-                    ),
-                  if (message.imageUrl != null)
-                    Image.network(
-                      message.imageUrl!,
-                      fit: BoxFit.cover,
-                    ),
-                ],
-              ),
-            ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSender
+              ? themeData.colorScheme.primary.withOpacity(0.3)
+              : themeData.colorScheme.secondary.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        constraints: BoxConstraints(
+          maxWidth: size.width * 0.7,
+          minWidth: size.width * 0.1,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 25),
+        child: IntrinsicWidth(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              if (!isSender)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (message.senderName.isNotEmpty)
+                      Text(
+                        message.senderName,
+                        style: TextStyle(
+                          fontSize: UiUtils.screenSubTitleFontSize + 2,
+                          fontWeight: FontWeight.bold,
+                          color: themeData.textTheme.bodySmall!.color,
+                        ),
+                      ),
+                    if (isAdmin)
+                      Text(
+                        'Admin',
+                        style: themeData.textTheme.titleSmall,
+                      ),
+                  ],
+                ),
+              if (message.content.isNotEmpty)
+                Text(
+                  message.content,
+                  style: const TextStyle(
+                      // fontSize: themeData.textTheme.bodyLarge!.fontSize ,
+                      // color: themeData.textTheme.bodyLarge!.color,
+                      ),
+                ),
+              if (message.imageUrl != null)
+                Image.network(
+                  message.imageUrl!,
+                  fit: BoxFit.cover,
+                ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

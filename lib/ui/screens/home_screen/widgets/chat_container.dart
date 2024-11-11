@@ -161,13 +161,11 @@ class _ChatContainerState extends State<ChatContainer>
                             List<String> selectedUsers = [];
                             selectedUsers = users
                                 .where((element) =>
-                            isUserSelected[users.indexOf(element)])
+                                    isUserSelected[users.indexOf(element)])
                                 .map((e) => e.id)
                                 .toList();
-                            selectedUsers.add(context
-                                .read<AuthCubit>()
-                                .getUserDetails()
-                                .id);
+                            selectedUsers.add(
+                                context.read<AuthCubit>().getUserDetails().id);
                             createGroup(
                               Group(
                                 name: groupNameController.text,
@@ -187,7 +185,8 @@ class _ChatContainerState extends State<ChatContainer>
                               'Group Created',
                               successColor,
                             );
-                            isUserSelected = List.generate(users.length, (index) => false);
+                            isUserSelected =
+                                List.generate(users.length, (index) => false);
                             groupNameController.clear();
                           } else {
                             UiUtils.showOverlay(
@@ -405,93 +404,86 @@ class _ChatContainerState extends State<ChatContainer>
                     ),
                   );
                 }),
-            StreamBuilder(
-              stream: context
-                  .read<FetchGroupCubit>()
-                  .fetchGroups()
-                  .asBroadcastStream(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting &&
-                    snapshot.connectionState == ConnectionState.active) {
+            BlocConsumer<FetchGroupCubit, FetchGroupState>(
+              listener: (context, state) {
+                if (state is FetchGroupFailure) {
+                  UiUtils.showSnackBar(context, state.errorMessage, Colors.red);
+                }
+              },
+              builder: (context, state) {
+                if (state is FetchGroupInProgress) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (snapshot.hasError) {
-                  return const Center(child: Text('An error occurred'));
+                if (state is FetchGroupFailure) {
+                  return Center(
+                    child: Text(state.errorMessage),
+                  );
                 }
-                if (snapshot.hasData) {
-                  if (snapshot.data!.snapshot.value != null) {
-                    Map<String, dynamic>? fetchedData = jsonDecode(jsonEncode(
-                        snapshot.data!.snapshot.value,
-                        toEncodable: (e) => e.toString()));
-                    List<Group> groups = [];
-                    // check if user id is in the members and show only if true
-
-                    groups = fetchedData!
-                        .map((key, value) {
-                          return MapEntry(key, Group.fromJson(value));
-                        })
-                        .values.where((element) => element.members.contains(context.read<AuthCubit>().getUserDetails().id ))
-                        .toList();
-                    if(groups.isEmpty){
-                      return const Center(
-                        child: Text('No group is available'),
-                      );
-                    }
-                    return Container(
-                      // color: themeData.colorScheme.primary,
-                      alignment: Alignment.topLeft,
-                      padding: EdgeInsets.only(top: size.height * 0.02),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: List.generate(groups.length, (index) {
-                          return ListTile(
-                            minVerticalPadding: 10,
-                            leading: Padding(
-                              padding:
-                                  const EdgeInsets.only(right: 22.0, left: 5),
-                              child: Stack(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 28,
-                                    backgroundColor: UiUtils.colors[
-                                    index % UiUtils.colors.length + 1],
-                                    child: Text(
-                                      groups[index]
-                                          .name
-                                          .characters
-                                          .first
-                                          .toUpperCase(),
-                                      style: TextStyle(
-                                        fontSize: UiUtils.screenTitleFontSize + 4,
-                                        color: themeData.colorScheme.onSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            title: Text(groups[index].name),
-                            trailing: Text(groups[index].lastMessageTime),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(groups[index].lastMessage),
-                                const Divider(),
-                              ],
-                            ),
-                            onTap: () {
-                              Navigator.pushNamed(context, Routes.groupChatScreen,
-                                  arguments: groups[index]);
-                            },
-                          );
-                        }),
-                      ),
+                if (state is FetchGroupSuccess) {
+                  List<Group> groups = state.groups;
+                  // check if user id is in the members and show only if true
+                  print('Groups from UI: ${groups.first.name}');
+                  groups = groups
+                      .where((element) => element.members.contains(
+                          context.read<AuthCubit>().getUserDetails().id))
+                      .toList();
+                  if (groups.isEmpty) {
+                    return const Center(
+                      child: Text('No group is available'),
                     );
                   }
+                  return Container(
+                    // color: themeData.colorScheme.primary,
+                    alignment: Alignment.topLeft,
+                    padding: EdgeInsets.only(top: size.height * 0.02),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: List.generate(groups.length, (index) {
+                        return ListTile(
+                          minVerticalPadding: 10,
+                          leading: Padding(
+                            padding:
+                                const EdgeInsets.only(right: 22.0, left: 5),
+                            child: Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 28,
+                                  backgroundColor: UiUtils.colors[
+                                      index % UiUtils.colors.length + 1],
+                                  child: Text(
+                                    groups[index]
+                                        .name
+                                        .characters
+                                        .first
+                                        .toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: UiUtils.screenTitleFontSize + 4,
+                                      color: themeData.colorScheme.onSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          title: Text(groups[index].name),
+                          trailing: Text(groups[index].lastMessageTime),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(groups[index].lastMessage),
+                              const Divider(),
+                            ],
+                          ),
+                          onTap: () {
+                            Navigator.pushNamed(context, Routes.groupChatScreen,
+                                arguments: groups[index]);
+                          },
+                        );
+                      }),
+                    ),
+                  );
                 }
-                return const Center(
-                  child: Text('No groups available'),
-                );
+                return const SizedBox();
               },
             ),
           ],
