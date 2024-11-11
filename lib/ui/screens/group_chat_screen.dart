@@ -841,12 +841,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                               }
                               return false;
                             });
-                          } else {
-                            UiUtils.showOverlay(
-                              context,
-                              'Group name cannot be empty',
-                              themeData.errorColor,
-                            );
                           }
                         },
                         style: ButtonStyle(

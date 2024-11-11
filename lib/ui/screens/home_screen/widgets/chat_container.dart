@@ -193,7 +193,7 @@ class _ChatContainerState extends State<ChatContainer>
                             UiUtils.showOverlay(
                               context,
                               'Group name cannot be empty',
-                              themeData.errorColor,
+                              themeData.colorScheme.error,
                             );
                           }
                         },
@@ -451,15 +451,20 @@ class _ChatContainerState extends State<ChatContainer>
                                   const EdgeInsets.only(right: 22.0, left: 5),
                               child: Stack(
                                 children: [
-                                  Text(
-                                    groups[index]
-                                        .name
-                                        .characters
-                                        .first
-                                        .toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: UiUtils.screenTitleFontSize + 4,
-                                      color: themeData.colorScheme.onSecondary,
+                                  CircleAvatar(
+                                    radius: 28,
+                                    backgroundColor: UiUtils.colors[
+                                    index % UiUtils.colors.length + 1],
+                                    child: Text(
+                                      groups[index]
+                                          .name
+                                          .characters
+                                          .first
+                                          .toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: UiUtils.screenTitleFontSize + 4,
+                                        color: themeData.colorScheme.onSecondary,
+                                      ),
                                     ),
                                   ),
                                 ],

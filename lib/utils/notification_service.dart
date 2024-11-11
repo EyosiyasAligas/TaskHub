@@ -1,8 +1,5 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:rxdart/rxdart.dart';
 
 Future<void> handleBackgroundMessage(RemoteMessage message) async {
@@ -23,15 +20,15 @@ class NotificationService {
   final _firebaseMessaging = FirebaseMessaging.instance;
   final _messageStreamController = BehaviorSubject<RemoteMessage>();
 
-  final _androidChannel = const AndroidNotificationChannel(
-    'high_importance_channel',
-    'High Importance Notifications',
-    description: 'This channel is used for important notifications',
-    importance: Importance.high,
-    playSound: true,
-  );
-
-  final _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  // final _androidChannel = const AndroidNotificationChannel(
+  //   'high_importance_channel',
+  //   'High Importance Notifications',
+  //   description: 'This channel is used for important notifications',
+  //   importance: Importance.high,
+  //   playSound: true,
+  // );
+  //
+  // final _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   handleMessages(RemoteMessage message) async {
     // if (message.notification != null) return;
@@ -55,22 +52,22 @@ class NotificationService {
   }
 
   Future initLocalNotification() async {
-    final android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    // final iOS = IOSInitilaizationSettings();
-    final initializationSettings = InitializationSettings(android: android);
-    await _localNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (payload) async {
-        if (payload != null) {
-          final message = RemoteMessage.fromMap(jsonDecode(payload.payload!));
-          handleMessages(message);
-        }
-      },
-    );
-    final platform =
-    _localNotificationsPlugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    await platform?.createNotificationChannel(_androidChannel);
+    // final android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    // // final iOS = IOSInitilaizationSettings();
+    // final initializationSettings = InitializationSettings(android: android);
+    // await _localNotificationsPlugin.initialize(
+      // initializationSettings,
+      // onDidReceiveNotificationResponse: (payload) async {
+      //   if (payload != null) {
+      //     final message = RemoteMessage.fromMap(jsonDecode(payload.payload!));
+      //     handleMessages(message);
+      //   }
+      // },
+    // );
+    // final platform =
+    // _localNotificationsPlugin.resolvePlatformSpecificImplementation<
+    //     AndroidFlutterLocalNotificationsPlugin>();
+    // await platform?.createNotificationChannel(_androidChannel);
   }
 
   Future initPushNotification() async {
@@ -96,19 +93,19 @@ class NotificationService {
     FirebaseMessaging.onMessage.listen((message) {
       final notification = message.notification;
       if (notification != null) {
-        _localNotificationsPlugin.show(
-            notification.hashCode,
-            notification.title,
-            notification.body,
-            NotificationDetails(
-              android: AndroidNotificationDetails(
-                  _androidChannel.id, _androidChannel.name,
-                  channelDescription: _androidChannel.description,
-                  importance: _androidChannel.importance,
-                  playSound: _androidChannel.playSound,
-                  icon: '@drawable/ic_launcher'),
-            ),
-            payload: jsonEncode(message.toMap()));
+        // _localNotificationsPlugin.show(
+        //     notification.hashCode,
+        //     notification.title,
+        //     notification.body,
+        //     // NotificationDetails(
+        //     //   android: AndroidNotificationDetails(
+        //     //       _androidChannel.id, _androidChannel.name,
+        //     //       channelDescription: _androidChannel.description,
+        //     //       importance: _androidChannel.importance,
+        //     //       playSound: _androidChannel.playSound,
+        //     //       icon: '@drawable/ic_launcher'),
+        //     // ),
+        //     payload: jsonEncode(message.toMap()));
       } else {
         return;
       }
