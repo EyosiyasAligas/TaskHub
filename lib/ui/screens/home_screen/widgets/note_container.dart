@@ -639,6 +639,7 @@ class _NoteContainerState extends State<NoteContainer> {
                 onPressed: () {
                   setState(() {
                     selectedNotes.clear();
+                    selectedNotes = [];
                   });
                 },
                 icon: const Icon(Icons.close),

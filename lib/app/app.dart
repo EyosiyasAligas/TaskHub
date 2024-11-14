@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,11 +11,18 @@ import 'package:task_hub/utils/notification_service.dart';
 
 import '../cubits/auth_cubit.dart';
 import '../data/repository/auth_repository.dart';
+import '../firebase_options.dart';
 import '../ui/screens/splash_screen.dart';
 import '../ui/styles/colors.dart';
 import '../utils/local_storage_keys.dart';
 import '../utils/ui_utils.dart';
 import 'routes.dart';
+
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  LocalNotificationService.instance.showFirebaseNotification(message);
+}
 
 Future<void> initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,16 +36,10 @@ Future<void> initializeApp() async {
   );
 
   await Firebase.initializeApp(
-    // options: DefaultFirebaseOptions.currentPlatform,
-    options: const FirebaseOptions(
-      apiKey: 'AIzaSyBDNU1FBh6QsnS1c5uIRZsJ6otflBzxWsE',
-      appId: '1:719576140435:android:98f7b42b4f3ed00607db66',
-      messagingSenderId: '719576140435',
-      projectId: 'taskhub-d7f7e',
-      storageBucket: 'taskhub-d7f7e.appspot.com',
-    ),
+    options: DefaultFirebaseOptions.currentPlatform,
   );
-  await NotificationService().initNotifications();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  LocalNotificationService.instance.initialize();
 
   // SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Hive.initFlutter();

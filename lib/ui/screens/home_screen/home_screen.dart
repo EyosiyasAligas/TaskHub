@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/routes.dart';
+import '../../../blocs/fetch_groups/fetch_groups_bloc.dart';
 import '../../../cubits/auth_cubit.dart';
 import '../../../cubits/create_group_cubit.dart';
 import '../../../cubits/create_note_cubit.dart';
@@ -42,6 +43,9 @@ class HomeScreen extends StatefulWidget {
           ),
           BlocProvider<CreateGroupCubit>(
             create: (_) => CreateGroupCubit(ChatRepository()),
+          ),
+          BlocProvider<FetchGroupsBloc>(
+            create: (_) => FetchGroupsBloc(ChatRepository())..add(FetchGroups()),
           ),
         ],
         child: const HomeScreen(),

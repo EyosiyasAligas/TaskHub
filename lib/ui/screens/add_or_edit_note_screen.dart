@@ -149,6 +149,10 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
                             child: const Text('Remove checklist'),
                             onTap: () {
                               note.isTodo = false;
+                              note.content = note.todoItems!
+                                  .map((e) => e.task)
+                                  .toList()
+                                  .join('\n');
                               note.todoItems = null;
                               setState(() {});
                               _createOrUpdateNote(note);
@@ -222,6 +226,11 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
       notCompletedTodoItems.length,
       (index) => TextEditingController(text: notCompletedTodoItems[index].task),
     );
+    notCompletedTodoControllers.forEach((element) {
+      element.selection = TextSelection.fromPosition(
+        TextPosition(offset: element.text.length),
+      );
+    });
     return Container(
       alignment: Alignment.centerLeft,
       constraints: const BoxConstraints(
@@ -249,7 +258,7 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
                   // FocusScope.of(context).nextFocus();
                   note.todoItems!.add(TodoItem(task: '', isCompleted: false));
                   notCompletedTodoControllers.add(TextEditingController());
-                  setState(() {});
+                  _createOrUpdateNote(note);
                 },
                 icon: Icon(
                   Icons.add,
@@ -303,9 +312,9 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
             if (completedTodoItems.isNotEmpty)
               TextButton.icon(
                 onPressed: () {
-                  note!.todoItems!.add(TodoItem(task: '', isCompleted: true));
+                  note.todoItems!.add(TodoItem(task: '', isCompleted: true));
                   completedTodoControllers.add(TextEditingController());
-                  setState(() {});
+                  _createOrUpdateNote(note);
                 },
                 icon: Icon(
                   Icons.add,
@@ -338,7 +347,8 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
         ),
         Expanded(
           child: TextField(
-            autofocus: todoItem.task.isEmpty ? true : false,
+            autofocus: todoItem.task.isEmpty ? true : true,
+            // focusNode: FocusNode(),
             style: TextStyle(
               decoration: isCompleted
                   ? TextDecoration.lineThrough
@@ -355,10 +365,27 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
             onAppPrivateCommand: (command, arguments) {
               print('command: $command, arguments: $arguments');
             },
-            textInputAction: TextInputAction.next,
+              textInputAction: TextInputAction.next,
             onSubmitted: (value) {
+
+              var isLast = note!.todoItems!.last.task == value;
+              if(isLast) {
+                note.todoItems!.add(TodoItem(task: '', isCompleted: isCompleted));
+                isCompleted
+                    ? completedTodoControllers.add(TextEditingController())
+                    : notCompletedTodoControllers.add(TextEditingController());
+              }
+
               FocusScope.of(context).nextFocus();
+              FocusScope.of(context).nextFocus();
+              _createOrUpdateNote(note);
+              Future.delayed(Duration.zero).then((value) {
+                if (true) {
+                  FocusScope.of(context).previousFocus();
+                }
+              });
               // if (todoItem.task.isNotEmpty) {
+
               //   note!.todoItems!.add(TodoItem(task: '', isCompleted: isCompleted));
               //   isCompleted
               //       ? completedTodoControllers.add(TextEditingController())
@@ -367,20 +394,28 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
               // }
             },
             controller: controller,
+            onEditingComplete: () {
+              print('Editing complete');
+              // FocusScope.of(context).nextFocus();
+              // FocusScope.of(context).nextFocus();
+            },
             onChanged: (value) {
               todoItem.task = value;
               if (todoItem.task.isEmpty) {
-                setState(() {
-                  note!.todoItems!.remove(todoItem);
-                  if (isCompleted) {
-                    completedTodoControllers.remove(controller);
-                  } else {
-                    notCompletedTodoControllers.remove(controller);
-                  }
+                note!.todoItems!.remove(todoItem);
+                if (isCompleted) {
+                  completedTodoControllers.remove(controller);
                   FocusScope.of(context).previousFocus();
-                });
+                  _createOrUpdateNote(note);
+                  FocusScope.of(context).previousFocus();
+                } else {
+                  notCompletedTodoControllers.remove(controller);
+                  FocusScope.of(context).previousFocus();
+                  _createOrUpdateNote(note);
+                  FocusScope.of(context).previousFocus();
+                }
               }
-              _createOrUpdateNote(note!);
+
             },
           ),
         ),
@@ -486,6 +521,7 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
                     .split('\n')
                     .map((e) => TodoItem(task: e, isCompleted: false))
                     .toList();
+                note.content = '';
               }
               setState(() {
                 _createOrUpdateNote(note);

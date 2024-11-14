@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/models/group.dart';
@@ -37,7 +37,9 @@ class FetchGroupCubit extends Cubit<FetchGroupState> {
     try {
       groupStream = chatRepository.fetchGroups();
       groupStream!.listen((groups) {
-        print('Groups from cubit: ${groups.first.name}');
+        if (kDebugMode) {
+          print('Groups from cubit: ${groups.first.name}');
+        }
         emit(FetchGroupSuccess(groups));
       });
       // return _groupController.stream;

@@ -11,6 +11,7 @@ import 'package:task_hub/data/models/group.dart';
 import 'package:task_hub/data/repository/note_repository.dart';
 
 import '../../../../app/routes.dart';
+import '../../../../blocs/fetch_groups/fetch_groups_bloc.dart';
 import '../../../../cubits/fetch_group_cubit.dart';
 import '../../../../data/models/user.dart';
 import '../../../../utils/ui_utils.dart';
@@ -45,8 +46,8 @@ class _ChatContainerState extends State<ChatContainer>
     Future.delayed(Duration.zero, () async {
       users = await context.read<AuthCubit>().fetchUsers();
       isUserSelected = List.generate(users.length, (index) => false);
-      context.read<FetchGroupCubit>().fetchGroups();
       print('Users from chat: $users');
+      // context.read<FetchGroupsBloc>().add(FetchGroups());
     });
   }
 
@@ -287,6 +288,7 @@ class _ChatContainerState extends State<ChatContainer>
         ],
         bottom: TabBar(
           onTap: (index) {
+            context.read<FetchGroupsBloc>().add(FetchGroups());
             _tabController.addListener(() {
               setState(() {
                 currentTabIndex = _tabController.index;
@@ -404,22 +406,28 @@ class _ChatContainerState extends State<ChatContainer>
                     ),
                   );
                 }),
-            BlocConsumer<FetchGroupCubit, FetchGroupState>(
+            BlocConsumer<FetchGroupsBloc, FetchGroupsState>(
               listener: (context, state) {
-                if (state is FetchGroupFailure) {
+                if (state is FetchGroupsInitial) {
+                  context.read<FetchGroupsBloc>().add(FetchGroups());
+                }
+                if (state is FetchGroupsFailure) {
                   UiUtils.showSnackBar(context, state.errorMessage, Colors.red);
                 }
               },
               builder: (context, state) {
-                if (state is FetchGroupInProgress) {
+                // if (state is FetchGroupsInitial) {
+                //   return const Center(child: CircularProgressIndicator());
+                // }
+                if (state is FetchGroupsInProgress) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (state is FetchGroupFailure) {
+                if (state is FetchGroupsFailure) {
                   return Center(
                     child: Text(state.errorMessage),
                   );
                 }
-                if (state is FetchGroupSuccess) {
+                if (state is FetchGroupsSuccess) {
                   List<Group> groups = state.groups;
                   // check if user id is in the members and show only if true
                   print('Groups from UI: ${groups.first.name}');
@@ -429,7 +437,7 @@ class _ChatContainerState extends State<ChatContainer>
                       .toList();
                   if (groups.isEmpty) {
                     return const Center(
-                      child: Text('No group is available'),
+                      child: Text('No group available'),
                     );
                   }
                   return Container(

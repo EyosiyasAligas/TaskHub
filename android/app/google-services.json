@@ -1,8 +1,9 @@
 {
   "project_info": {
     "project_number": "719576140435",
+    "firebase_url": "https://taskhub-d7f7e-default-rtdb.firebaseio.com",
     "project_id": "taskhub-d7f7e",
-    "storage_bucket": "taskhub-d7f7e.appspot.com"
+    "storage_bucket": "taskhub-d7f7e.firebasestorage.app"
   },
   "client": [
     {
