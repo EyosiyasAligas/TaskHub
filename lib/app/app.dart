@@ -21,7 +21,7 @@ import 'routes.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  LocalNotificationService.instance.showFirebaseNotification(message);
+  AwesomeNotificationService.instance.handleIncomingNotification(message);
 }
 
 Future<void> initializeApp() async {
@@ -39,7 +39,7 @@ Future<void> initializeApp() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  LocalNotificationService.instance.initialize();
+  AwesomeNotificationService.instance.initialize();
 
   // SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Hive.initFlutter();
@@ -77,7 +77,7 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthCubit>(
-          create: (_) => AuthCubit(AuthRepository()),
+          create: (_) => AuthCubit(AuthRepository(null)),
         ),
       ],
       child: ValueListenableBuilder<ThemeMode>(

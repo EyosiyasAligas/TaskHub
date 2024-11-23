@@ -30,7 +30,7 @@ class AddOrEditNotesScreen extends StatefulWidget {
         providers: [
           BlocProvider<CreateNoteCubit>(
             create: (context) =>
-                CreateNoteCubit(NoteRepository(), AuthRepository()),
+                CreateNoteCubit(NoteRepository(), AuthRepository(null)),
           ),
           BlocProvider<EditNoteCubit>(
             create: (context) => EditNoteCubit(NoteRepository()),

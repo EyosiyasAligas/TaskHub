@@ -30,10 +30,10 @@ class LoginScreen extends StatefulWidget {
       builder: (_) => MultiBlocProvider(
         providers: [
           BlocProvider<SignInCubit>(
-            create: (_) => SignInCubit(AuthRepository()),
+            create: (_) => SignInCubit(AuthRepository(null)),
           ),
           BlocProvider<SignUpCubit>(
-            create: (_) => SignUpCubit(AuthRepository()),
+            create: (_) => SignUpCubit(AuthRepository(null)),
           ),
         ],
         child: const LoginScreen(),
@@ -287,7 +287,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       child: BlocProvider(
                                         create: (_) =>
                                             ForgotPasswordRequestCubit(
-                                                AuthRepository()),
+                                                AuthRepository(null)),
                                         child:
                                             const ForgotPasswordRequestBottomSheet(),
                                       ),

@@ -13,6 +13,14 @@ import '../../utils/local_storage_keys.dart';
 import '../models/user.dart';
 
 class AuthRepository {
+
+  FirebaseAuth? _auth;
+
+  // constructor
+  AuthRepository(FirebaseAuth? auth) {
+    _auth = auth;
+  }
+
   //LocalDataSource
   bool getIsLogIn() {
     return Hive.box(authBoxKey).get(isLogInKey) ?? false;
@@ -52,7 +60,7 @@ class AuthRepository {
     };
 
     try {
-      final response = await FirebaseAuth.instance
+      final response = await _auth!
           .signInWithEmailAndPassword(email: email, password: password);
       var userMap = {
         'email': email,
@@ -80,13 +88,13 @@ class AuthRepository {
 
     try {
       //signUp using firebase sdk
-      final response = await FirebaseAuth.instance
+      final response = await _auth!
           .createUserWithEmailAndPassword(email: email, password: password);
-      await _database.child(response.user!.uid).set({
-        'id': response.user!.uid,
-        'email': email,
-        'isOnline': true,
-      });
+      // await _database.child(response.user!.uid).set({
+      //   'id': response.user!.uid,
+      //   'email': email,
+      //   'isOnline': true,
+      // });
       var userMap = {
         'email': email,
         // 'fcm_id': await FirebaseMessaging.instance.getToken(),
@@ -111,7 +119,7 @@ class AuthRepository {
       setIsLogIn(false);
       setJwtToken("");
       setUserDetails(UserModel.fromJson({}));
-      final response = await FirebaseAuth.instance.signOut();
+      final response = await _auth!.signOut();
     } catch (e) {
       throw ApiException('Failed to sign out: $e');
     }
