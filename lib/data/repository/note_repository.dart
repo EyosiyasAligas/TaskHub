@@ -159,7 +159,7 @@ class NoteRepository {
     return dummyNotes;
   }
 
-  String userId = AuthRepository(null).getUserDetails().id;
+  String userId = AuthRepository().getUserDetails().id;
   final  _database = FirebaseDatabase.instance.ref('notes');
   // final fetchNoteReference = FirebaseDatabase.instance.ref().child('notes');
 

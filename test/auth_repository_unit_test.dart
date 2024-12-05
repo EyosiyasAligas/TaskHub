@@ -16,7 +16,7 @@ Future<void> main() async {
   when(Firebase.initializeApp()).thenAnswer((_)  async => Firebase.app());
 
   final mockFirebaseAuth = MockFirebaseAuth();
-  final authRepository = AuthRepository(mockFirebaseAuth);
+  final authRepository = AuthRepository();
 
   test('test user create', () async {
     // Mock a user with the email and password for testing purposes

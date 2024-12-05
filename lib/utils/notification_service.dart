@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 class AwesomeNotificationService {
   AwesomeNotificationService._privateConstructor();
-  static final AwesomeNotificationService instance = AwesomeNotificationService._privateConstructor();
+
+  static final AwesomeNotificationService instance =
+      AwesomeNotificationService._privateConstructor();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 
@@ -17,7 +19,8 @@ class AwesomeNotificationService {
         NotificationChannel(
           channelKey: 'high_importance_channel',
           channelName: 'High Importance Notifications',
-          channelDescription: 'This channel is used for important notifications.',
+          channelDescription:
+              'This channel is used for important notifications.',
           defaultColor: const Color(0xFF9D50DD),
           ledColor: Colors.white,
           importance: NotificationImportance.High,
@@ -33,8 +36,8 @@ class AwesomeNotificationService {
     });
 
     // Request permissions and set up FCM
-    requestPermission();
-    setupFirebaseMessaging();
+    await requestPermission();
+    await setupFirebaseMessaging();
   }
 
   Future<void> requestPermission() async {
@@ -45,14 +48,13 @@ class AwesomeNotificationService {
     });
   }
 
-  void setupFirebaseMessaging() {
-    // Handle foreground notifications
+  Future<void> setupFirebaseMessaging() async {
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       handleIncomingNotification(message);
     });
 
-    // Handle background and terminated state notifications
+    // // Handle background and terminated state notifications
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       handleIncomingNotification(message);
     });
@@ -63,25 +65,44 @@ class AwesomeNotificationService {
       content: NotificationContent(
         id: message.hashCode,
         channelKey: 'high_importance_channel',
-        title: message.notification?.title ?? 'Notification',
-        body: message.notification?.body ?? 'You have a new message.',
+        title: message.notification?.title,
+        body: message.notification?.body,
+        // add an image to the notification
+        bigPicture: message.notification?.android?.imageUrl,
+        notificationLayout: NotificationLayout.BigPicture,
+
+
       ),
     );
   }
 
-  Future<void> showLocalNotification({
-    required int id,
-    required String title,
-    required String body,
-    String channelKey = 'high_importance_channel',
+  // Future<void> showLocalNotification({
+  //   required int id,
+  //   required String title,
+  //   required String body,
+  //   String channelKey = 'high_importance_channel',
+  // }) async {
+  //   await AwesomeNotifications().createNotification(
+  //     content: NotificationContent(
+  //       id: id,
+  //       channelKey: channelKey,
+  //       title: title,
+  //       body: body,
+  //     ),
+  //   );
+  // }
+
+  Future createNotificationChannel({
+    required NotificationContent content,
+    List<NotificationActionButton>? actionButtons,
+    NotificationSchedule? schedule,
+    Map<String, NotificationLocalization>? localizations,
   }) async {
     await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: id,
-        channelKey: channelKey,
-        title: title,
-        body: body,
-      ),
+      content: content,
+      actionButtons: actionButtons,
+      schedule: schedule,
+      localizations: localizations,
     );
   }
 

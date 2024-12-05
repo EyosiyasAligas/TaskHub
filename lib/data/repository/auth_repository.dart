@@ -14,12 +14,12 @@ import '../models/user.dart';
 
 class AuthRepository {
 
-  FirebaseAuth? _auth;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // constructor
-  AuthRepository(FirebaseAuth? auth) {
-    _auth = auth;
-  }
+  // AuthRepository(FirebaseAuth? auth) {
+  //   _auth = auth;
+  // }
 
   //LocalDataSource
   bool getIsLogIn() {
@@ -60,7 +60,7 @@ class AuthRepository {
     };
 
     try {
-      final response = await _auth!
+      final response = await _auth
           .signInWithEmailAndPassword(email: email, password: password);
       var userMap = {
         'email': email,
@@ -88,7 +88,7 @@ class AuthRepository {
 
     try {
       //signUp using firebase sdk
-      final response = await _auth!
+      final response = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
       // await _database.child(response.user!.uid).set({
       //   'id': response.user!.uid,
@@ -119,7 +119,7 @@ class AuthRepository {
       setIsLogIn(false);
       setJwtToken("");
       setUserDetails(UserModel.fromJson({}));
-      final response = await _auth!.signOut();
+      final response = await _auth.signOut();
     } catch (e) {
       throw ApiException('Failed to sign out: $e');
     }

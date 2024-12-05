@@ -7,7 +7,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 <!--        <service-->
-<!--            android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingService"-->
+<!--            android:name="io.flutter.plugins.   firebase.messaging.FlutterFirebaseMessagingService"-->
 <!--            tools:replace="android:exported">-->
 <!--            <intent-filter>-->
 <!--                <action android:name="com.google.firebase.MESSAGING_EVENT" />-->

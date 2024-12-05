@@ -1,10 +1,13 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:lottie/lottie.dart';
+import 'package:rive/rive.dart' as rive; // Prefix Rive package
+
 import 'package:task_hub/ui/screens/auth_screen/widgets/forget_password.dart';
 
 import '../../../app/app.dart';
@@ -30,10 +33,10 @@ class LoginScreen extends StatefulWidget {
       builder: (_) => MultiBlocProvider(
         providers: [
           BlocProvider<SignInCubit>(
-            create: (_) => SignInCubit(AuthRepository(null)),
+            create: (_) => SignInCubit(AuthRepository()),
           ),
           BlocProvider<SignUpCubit>(
-            create: (_) => SignUpCubit(AuthRepository(null)),
+            create: (_) => SignUpCubit(AuthRepository()),
           ),
         ],
         child: const LoginScreen(),
@@ -55,11 +58,83 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
+  var animationLink = 'assets/login_bear.riv';
+  var emailController = TextEditingController();
+  var passController = TextEditingController();
+  rive.SMITrigger? failTrigger, successTrigger;
+  rive.SMIBool? isHandsUp, isChecking;
+  rive.SMINumber? lookNum;
+  rive.StateMachineController? stateMachineController;
+  rive.Artboard? artboard;
+
+  Future initRive() async {
+    await rive.RiveFile.initialize();
+  }
+
+  @override
+  void initState() {
+    rootBundle.load(animationLink).then((valueh) {
+      initRive().then((value) {
+        final file = rive.RiveFile.import(valueh);
+        final art = file.mainArtboard;
+        stateMachineController =
+            rive.StateMachineController.fromArtboard(art, "Login Machine");
+
+        if (stateMachineController != null) {
+          art.addController(stateMachineController!);
+
+          stateMachineController!.inputs.forEach((element) {
+            if (element.name == "isChecking") {
+              isChecking = element as rive.SMIBool;
+            } else if (element.name == "isHandsUp") {
+              isHandsUp = element as rive.SMIBool;
+            } else if (element.name == "trigSuccess") {
+              successTrigger = element as rive.SMITrigger;
+            } else if (element.name == "trigFail") {
+              failTrigger = element as rive.SMITrigger;
+            } else if (element.name == "numLook") {
+              lookNum = element as rive.SMINumber;
+            }
+          });
+        }
+        setState(() => artboard = art);
+      });
+    });
+
+    super.initState();
+  }
+
+  void lookAround() {
+    isChecking?.change(true);
+    isHandsUp?.change(false);
+    lookNum?.change(0);
+  }
+
+  void moveEyes(value) {
+    lookNum?.change(value.length.toDouble());
+  }
+
+  void handsUpOnEyes() {
+    isHandsUp?.change(true);
+    isChecking?.change(false);
+    // moveEyes(passController.text);
+  }
+
+  void loginClick() {
+    isChecking?.change(false);
+    isHandsUp?.change(false);
+    if (emailController.text == "email" && passController.text == "pass") {
+      successTrigger?.fire();
+    } else {
+      failTrigger?.fire();
+    }
+    setState(() {});
+  }
+
   @override
   void dispose() {
-    // nameController.dispose();
-    // emailController.dispose();
-    // passwordController.dispose();
+    emailController.dispose();
+    passController.dispose();
     super.dispose();
   }
 
@@ -141,10 +216,28 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildSmallScreen(
     Size size,
   ) {
-    return Center(
-      child: _buildMainBody(
-        size,
-      ),
+    return Stack(
+      children: [
+        Container(
+          // color: Colors.red,
+          alignment: Alignment.topCenter,
+          width: size.width,
+          height: size.height,
+          child: artboard != null
+              ? rive.Rive(
+                  useArtboardSize: true,
+                  artboard: artboard!,
+                  fit: BoxFit.fill,
+                )
+              : const SizedBox(),
+        ),
+        Positioned(
+          top: size.height * 0.4,
+          child: _buildMainBody(
+            size,
+          ),
+        ),
+      ],
     );
   }
 
@@ -155,6 +248,21 @@ class _LoginScreenState extends State<LoginScreen> {
     bool isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
     return Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.background,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.center,
+          tileMode: TileMode.mirror,
+          transform: GradientRotation(0),
+          // stops: const [0.5, 1],
+          colors: [
+            Theme.of(context).colorScheme.background.withOpacity(0.1),
+            Theme.of(context).colorScheme.background,
+          ],
+        ),
+      ),
       padding: EdgeInsets.symmetric(
           horizontal: !isLandscape && size.width > 600 ? 100 : 0),
       child: Column(
@@ -163,35 +271,35 @@ class _LoginScreenState extends State<LoginScreen> {
             ? MainAxisAlignment.center
             : MainAxisAlignment.start,
         children: [
-          if (!isLandscape) SizedBox(height: size.height * 0.25),
-          size.width > 600
-              ? Container()
-              : SizedBox(
-                  // height: size.height * 0.25,
-                ),
-          // Lottie.asset(
-          //   'assets/wave.json',
-          //   height: size.height * 0.2,
-          //   width: size.width,
-          //   fit: BoxFit.fill,
+          // if (!isLandscape) SizedBox(height: size.height * 0.25),
+          // size.width > 600
+          //     ? Container()
+          //     : SizedBox(
+          //         // height: size.height * 0.25,
+          //         ),
+          // // Lottie.asset(
+          // //   'assets/wave.json',
+          // //   height: size.height * 0.2,
+          // //   width: size.width,
+          // //   fit: BoxFit.fill,
+          // // ),
+          // // SizedBox(
+          // //   height: size.height * 0.03,
+          // // ),
+          // // SingleChildScrollView(
+          // //   child: Padding(
+          // //     padding: const EdgeInsets.only(left: 20.0),
+          // //     child: Text(
+          // //       isLoginScreen ? 'Login' : 'Signup',
+          // //       style: Theme.of(context).textTheme.displayLarge,
+          // //     ),
+          // //   ),
+          // // ),
+          // const SizedBox(
+          //   height: 8,
           // ),
-          SizedBox(
-            height: size.height * 0.03,
-          ),
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 20.0),
-              child: Text(
-                isLoginScreen ? 'Login' : 'Signup',
-                style: Theme.of(context).textTheme.displayLarge,
-              ),
-            ),
-          ),
-          const SizedBox(
-            height: 8,
-          ),
           Padding(
-            padding: const EdgeInsets.only(left: 20.0),
+            padding: const EdgeInsets.only(left: 20.0, top: 20),
             child: Text(
               isLoginScreen ? 'Welcome Back!!!' : 'Create an Account',
               style: TextStyle(
@@ -203,7 +311,9 @@ class _LoginScreenState extends State<LoginScreen> {
           SizedBox(
             height: size.height * 0.03,
           ),
-          Padding(
+          Container(
+            width: size.width,
+            height: size.height * 0.40,
             padding: const EdgeInsets.only(left: 20.0, right: 20),
             child: Form(
               key: _formKey,
@@ -211,13 +321,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   /// username or Gmail
                   TextFormField(
-                    // controller: emailController,
+                    controller: emailController,
                     style: TextStyle(
                       fontSize: UiUtils.screenSubTitleFontSize,
                     ),
                     onChanged: (val) {
                       email = val;
+                      moveEyes(val);
                     },
+                    onTapOutside: (_) {
+                      isChecking?.change(false);
+                      isHandsUp?.change(false);
+                    },
+                    onTap: lookAround,
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.email_outlined),
@@ -236,13 +352,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   /// password
                   TextFormField(
-                    // controller: passwordController,
+                    controller: passController,
                     style: TextStyle(
                       fontSize: UiUtils.screenSubTitleFontSize,
                     ),
                     onChanged: (val) {
                       password = val;
                     },
+                    onTapOutside: (_) {
+                      isChecking?.change(false);
+                      isHandsUp?.change(false);
+                    },
+                    onTap: handsUpOnEyes,
                     obscureText: isPasswordVisible,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.lock_open),
@@ -287,7 +408,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       child: BlocProvider(
                                         create: (_) =>
                                             ForgotPasswordRequestCubit(
-                                                AuthRepository(null)),
+                                                AuthRepository()),
                                         child:
                                             const ForgotPasswordRequestBottomSheet(),
                                       ),
@@ -391,7 +512,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Login Button
+// Login Button
   Widget loginButton() {
     return BlocConsumer<SignInCubit, SignInState>(
       listener: (context, state) {
@@ -399,17 +520,21 @@ class _LoginScreenState extends State<LoginScreen> {
           context.read<AuthCubit>().authenticateUser(
               jwtToken: state.jwtToken ?? '', user: state.user);
           Navigator.of(context).pushReplacementNamed(Routes.home);
+          successTrigger?.fire();
+          setState(() {});
         } else if (state is SignInFailure) {
+          failTrigger?.fire();
           UiUtils.showSnackBar(
             context,
             state.errorMessage,
             Theme.of(context).colorScheme.error,
           );
+          setState(() {});
         }
       },
       builder: (context, state) {
         return SizedBox(
-          width: double.infinity,
+          width: 200,
           height: 55,
           child: ElevatedButton(
             style: ButtonStyle(
@@ -428,6 +553,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       email: email.trim(),
                       password: password.trim(),
                     );
+              } else {
+                failTrigger?.fire();
               }
             },
             child: Row(

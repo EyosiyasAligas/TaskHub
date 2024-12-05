@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:task_hub/utils/notification_service.dart';
 
 import '../cubits/auth_cubit.dart';
 import '../data/repository/auth_repository.dart';
@@ -15,13 +14,14 @@ import '../firebase_options.dart';
 import '../ui/screens/splash_screen.dart';
 import '../ui/styles/colors.dart';
 import '../utils/local_storage_keys.dart';
+import '../utils/notification_service.dart';
 import '../utils/ui_utils.dart';
 import 'routes.dart';
 
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  AwesomeNotificationService.instance.handleIncomingNotification(message);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // await AwesomeNotificationService.instance.handleIncomingNotification(message);
 }
 
 Future<void> initializeApp() async {
@@ -77,7 +77,7 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthCubit>(
-          create: (_) => AuthCubit(AuthRepository(null)),
+          create: (_) => AuthCubit(AuthRepository()),
         ),
       ],
       child: ValueListenableBuilder<ThemeMode>(

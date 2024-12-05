@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ import '../../cubits/edit_note_cubit.dart';
 import '../../cubits/fetch_note_cubit.dart';
 import '../../data/repository/auth_repository.dart';
 import '../../data/repository/note_repository.dart';
+import '../../utils/notification_service.dart';
 import '../styles/colors.dart';
 import '../widgets/error_container.dart';
 
@@ -30,7 +32,7 @@ class AddOrEditNotesScreen extends StatefulWidget {
         providers: [
           BlocProvider<CreateNoteCubit>(
             create: (context) =>
-                CreateNoteCubit(NoteRepository(), AuthRepository(null)),
+                CreateNoteCubit(NoteRepository(), AuthRepository()),
           ),
           BlocProvider<EditNoteCubit>(
             create: (context) => EditNoteCubit(NoteRepository()),
@@ -365,12 +367,12 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
             onAppPrivateCommand: (command, arguments) {
               print('command: $command, arguments: $arguments');
             },
-              textInputAction: TextInputAction.next,
+            textInputAction: TextInputAction.next,
             onSubmitted: (value) {
-
               var isLast = note!.todoItems!.last.task == value;
-              if(isLast) {
-                note.todoItems!.add(TodoItem(task: '', isCompleted: isCompleted));
+              if (isLast) {
+                note.todoItems!
+                    .add(TodoItem(task: '', isCompleted: isCompleted));
                 isCompleted
                     ? completedTodoControllers.add(TextEditingController())
                     : notCompletedTodoControllers.add(TextEditingController());
@@ -415,7 +417,6 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
                   FocusScope.of(context).previousFocus();
                 }
               }
-
             },
           ),
         ),
@@ -477,6 +478,32 @@ class _AddOrEditNotesScreenState extends State<AddOrEditNotesScreen> {
               _createOrUpdateNote(note);
             }
           }
+          await AwesomeNotificationService.instance.createNotificationChannel(
+            content: NotificationContent(
+              id: 10,
+              channelKey: 'high_importance_channel',
+              title: 'Notification',
+              // remind when the remider is reached
+              body: 'your reminder for ${note!.title} is due',
+            ),
+            schedule: NotificationCalendar(
+              second: note.reminder!.second,
+              minute: note.reminder!.minute,
+              hour: note.reminder!.hour,
+              day: note.reminder!.day,
+              month: note.reminder!.month,
+              year: note.reminder!.year,
+              allowWhileIdle: true,
+              preciseAlarm: true,
+              repeats: true,
+            ),
+            actionButtons: [
+              NotificationActionButton(
+                key: 'OPEN',
+                label: 'Open',
+              ),
+            ],
+          );
         } else {}
       },
       child: Chip(

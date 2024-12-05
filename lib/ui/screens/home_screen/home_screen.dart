@@ -33,7 +33,7 @@ class HomeScreen extends StatefulWidget {
             create: (_) => FetchNoteCubit(NoteRepository()),
           ),
           BlocProvider<CreateNoteCubit>(
-            create: (_) => CreateNoteCubit(NoteRepository(), AuthRepository(null)),
+            create: (_) => CreateNoteCubit(NoteRepository(), AuthRepository()),
           ),
           BlocProvider<EditNoteCubit>(
             create: (_) => EditNoteCubit(NoteRepository()),
