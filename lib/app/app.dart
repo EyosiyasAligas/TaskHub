@@ -13,15 +13,23 @@ import '../data/repository/auth_repository.dart';
 import '../firebase_options.dart';
 import '../ui/screens/splash_screen.dart';
 import '../ui/styles/colors.dart';
+import '../utils/local_notification.dart';
 import '../utils/local_storage_keys.dart';
 import '../utils/notification_service.dart';
 import '../utils/ui_utils.dart';
 import 'routes.dart';
 
 
+// Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+//   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+//   // await AwesomeNotificationService.instance.handleIncomingNotification(message);
+// }
+
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // await AwesomeNotificationService.instance.handleIncomingNotification(message);
+  if (message.data.isNotEmpty) {
+    await Firebase.initializeApp();
+    LocalNotificationService.instance.showFirebaseNotification(message);
+  }
 }
 
 Future<void> initializeApp() async {
@@ -38,10 +46,16 @@ Future<void> initializeApp() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  AwesomeNotificationService.instance.initialize();
+  /// awesome notification
+  // FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  // AwesomeNotificationService.instance.initialize();
 
-  // SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  /// Firebase Messaging background handling
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  /// Initialize local notifications
+  LocalNotificationService.instance.initialize();
+
   await Hive.initFlutter();
   await Hive.openBox(authBoxKey);
   await Hive.openBox(settingsKey);
